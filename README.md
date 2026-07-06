@@ -4,18 +4,20 @@ Found a set of AWS credentials and have no idea which permissions it might have?
 
 ```console
 $ ./enumerate-iam.py --access-key AKIA... --secret-key StF0q...
-[INFO] Starting permission enumeration for access-key-id "AKIA..."
+[INFO] -- Account ARN : arn:aws:iam::123456789012:user/bob
+[INFO] -- Account Id  : 123456789012
 [INFO] Run for the hills, get_account_authorization_details worked!
-[INFO] Attempting common-service describe / list brute force.
 [INFO] -- gamelift.list_builds() worked!
 [INFO] -- cloudformation.list_stack_sets() worked!
-[INFO] -- directconnect.describe_locations() worked!
 [INFO] -- sqs.list_queues() worked!
+[INFO] Enumeration complete: 4 API calls succeeded (1 IAM, 3 brute force).
 ```
 
-Progress is logged to stderr (with basic colours for a real terminal); the full
-result set is printed as JSON to stdout at the end, so you can pipe it to `jq`
-or a file. Now you do!
+By default only the results are shown — the caller's identity (cyan), the found
+permissions (green), and a summary — with the routine progress chatter hidden;
+pass `--verbose` for the full log. Logs go to stderr (with colours on a real
+terminal); the full result set is printed as JSON to stdout at the end, so you
+can pipe it to `jq` or a file. Now you do!
 
 `enumerate-iam.py` tries to brute force all API calls allowed by the IAM policy.
 The calls performed by this tool are all non-destructive (only get* and list*
@@ -31,6 +33,7 @@ calls are performed).
 --endpoint-url    Override the AWS endpoint URL (e.g. a localstack or proxy URL)
 --output FILE     Write JSON results to FILE instead of stdout
 --dry-run         List the operations that would be tested and exit
+--verbose         Show all progress chatter (default shows only the results)
 ```
 
 ### Credentials
@@ -46,6 +49,8 @@ line, which leaks them into `ps` output and shell history.
 ```
 git clone git@github.com:a6avind/enumerate-iam.git
 cd enumerate-iam/
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -59,14 +64,17 @@ the main function and provide the required arguments:
 ```python
 from enumerate_iam.main import enumerate_iam
 
-enumerate_iam(access_key,
-              secret_key,
-              session_token,
-              region)
+results = enumerate_iam(access_key,
+                        secret_key,
+                        session_token,
+                        region,
+                        endpoint_url=None,
+                        dry_run=False,
+                        verbose=False)
 ```
 
-The output will contain all the enumerated permission information in a python
-dictionary.
+The returned value is a python dictionary containing all the enumerated
+permission information.
 
 ## Other tools
 

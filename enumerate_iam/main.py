@@ -19,24 +19,23 @@ Improvements:
 import os
 import re
 import sys
+import random
 import logging
+import datetime
 import boto3
 import botocore
 import botocore.session
-import random
 
 from botocore.client import Config
 from botocore.endpoint import MAX_POOL_CONNECTIONS
 from multiprocessing.dummy import Pool as ThreadPool
 
-from enumerate_iam.utils.remove_metadata import remove_metadata
 from enumerate_iam.bruteforce_tests import BRUTEFORCE_TESTS
 
 MAX_THREADS = 25
 CLIENT_POOL = {}
 
-# Shared client config. max_attempts was 30, which turned unreachable regional
-# endpoints into multi-minute hangs (issue #14); 3 is plenty for throttling.
+# max_attempts was 30, which made unreachable endpoints hang for minutes.
 BOTO_CONFIG = Config(
     connect_timeout=5,
     read_timeout=5,
@@ -44,13 +43,30 @@ BOTO_CONFIG = Config(
     max_pool_connections=MAX_POOL_CONNECTIONS * 2,
 )
 
-# Errors that mean "this endpoint didn't answer usefully" — skip and move on.
-RETRYABLE_ERRORS = (
+# Skip any single failed call rather than abort the run; ClientError is not a
+# BotoCoreError subclass, so both are listed.
+SKIPPABLE_ERRORS = (
     botocore.exceptions.ClientError,
-    botocore.exceptions.EndpointConnectionError,
-    botocore.exceptions.ConnectTimeoutError,
-    botocore.exceptions.ReadTimeoutError,
+    botocore.exceptions.BotoCoreError,
 )
+
+
+def remove_metadata(boto_response):
+    if isinstance(boto_response, dict):
+        boto_response.pop('ResponseMetadata', None)
+
+    return boto_response
+
+
+def json_encoder(obj):
+    """default= hook for json.dumps: serialise the non-JSON types AWS returns."""
+    if isinstance(obj, (datetime.date, datetime.datetime)):
+        return obj.isoformat()
+
+    if isinstance(obj, bytes):
+        return obj.decode('utf-8', errors='ignore')
+
+    raise TypeError('Object of type %s is not JSON serializable' % type(obj).__name__)
 
 
 def report_arn(candidate):
@@ -104,8 +120,7 @@ def enumerate_using_bruteforce(access_key, secret_key, session_token, region, en
             key, action_result = thread_result
             output[key] = action_result
     finally:
-        # terminate() (not just close/join) releases the pool's internal
-        # semaphores, avoiding the leaked-semaphore warning at shutdown (#24).
+        # terminate() frees the pool's semaphores; close()/join() alone leaks them.
         pool.terminate()
         pool.join()
 
@@ -176,15 +191,14 @@ def check_one_permission(arg_tuple):
 
     try:
         action_response = action_function()
-    except RETRYABLE_ERRORS:
-        return
     except botocore.exceptions.ParamValidationError:
+        # Listed before SKIPPABLE_ERRORS (its superclass) to keep this signal.
         logger.error('Remove %s.%s action' % (service_name, operation_name))
         return
+    except SKIPPABLE_ERRORS:
+        return
 
-    msg = '-- %s.%s() worked!'
-    args = (service_name, operation_name)
-    logger.info(msg % args)
+    logger.info('-- %s.%s() worked!', service_name, operation_name)
 
     key = '%s.%s' % (service_name, operation_name)
 
@@ -193,6 +207,7 @@ def check_one_permission(arg_tuple):
 
 class ColorFormatter(logging.Formatter):
     GREEN = '\033[32m'
+    CYAN = '\033[36m'
     RED = '\033[31m'
     YELLOW = '\033[33m'
     RESET = '\033[0m'
@@ -200,30 +215,45 @@ class ColorFormatter(logging.Formatter):
     # Honour NO_COLOR (https://no-color.org) and skip colours when not a TTY.
     enabled = sys.stderr.isatty() and 'NO_COLOR' not in os.environ
 
-    HITS = ('worked!', 'Run for the hills', 'root credentials')
+    # Found permissions and the run summary.
+    HITS = ('worked!', 'Run for the hills', 'root credentials', 'Enumeration complete')
+    # Caller identity — shown even in the default (filtered) view.
+    ACCOUNT = ('Account ARN', 'Account Id', 'Account Path')
 
     def format(self, record):
         line = super().format(record)
         if not self.enabled:
             return line
 
+        message = record.getMessage()
         if record.levelno >= logging.ERROR:
             colour = self.RED
         elif record.levelno == logging.WARNING:
             colour = self.YELLOW
-        elif any(hit in record.getMessage() for hit in self.HITS):
+        elif any(hit in message for hit in self.HITS):
             colour = self.GREEN
+        elif any(hit in message for hit in self.ACCOUNT):
+            colour = self.CYAN
         else:
             return line
 
         return '%s%s%s' % (colour, line, self.RESET)
 
 
-def configure_logging():
+def _findings_only(record):
+    # Keep results and warnings/errors; drop the routine progress chatter.
+    return (record.levelno >= logging.WARNING
+            or any(hit in record.getMessage()
+                   for hit in ColorFormatter.HITS + ColorFormatter.ACCOUNT))
+
+
+def configure_logging(verbose=False):
     handler = logging.StreamHandler()
     handler.setFormatter(ColorFormatter(
         '%(asctime)s - %(process)d - [%(levelname)s] %(message)s'
     ))
+    if not verbose:
+        handler.addFilter(_findings_only)
     logging.basicConfig(level=logging.INFO, handlers=[handler])
 
     # Suppress boto INFO.
@@ -237,18 +267,19 @@ def configure_logging():
     import urllib3
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    # import botocore.vendored.requests.packages.urllib3 as urllib3
     urllib3.disable_warnings(botocore.vendored.requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
 
-def enumerate_iam(access_key, secret_key, session_token, region, endpoint_url=None, dry_run=False):
+def enumerate_iam(access_key, secret_key, session_token, region, endpoint_url=None,
+                  dry_run=False, verbose=False):
     """IAM Account Enumerator.
 
     This code provides a mechanism to attempt to validate the permissions assigned
     to a given set of AWS tokens.
     """
     output = dict()
-    configure_logging()
+    # dry-run always logs in full; otherwise verbose controls the chatter.
+    configure_logging(verbose=verbose or dry_run)
     logger = logging.getLogger()
 
     if dry_run:
@@ -261,9 +292,8 @@ def enumerate_iam(access_key, secret_key, session_token, region, endpoint_url=No
         return output
 
     if access_key is None and secret_key is None:
-        # Fall back to boto3's default credential chain (env vars, shared
-        # config/profile, instance role). Fail early with a clear message if it
-        # resolves to nothing, rather than crashing mid-enumeration.
+        # No keys passed: let boto3 resolve them, but fail early and clearly if
+        # nothing is found instead of crashing mid-enumeration.
         try:
             found = botocore.session.Session().get_credentials()
         except botocore.exceptions.BotoCoreError:
@@ -279,6 +309,10 @@ def enumerate_iam(access_key, secret_key, session_token, region, endpoint_url=No
     output['iam'] = enumerate_using_iam(access_key, secret_key, session_token, region, endpoint_url)
     output['bruteforce'] = enumerate_using_bruteforce(access_key, secret_key, session_token, region, endpoint_url)
 
+    iam_hits = sum(1 for key in output['iam'] if key.startswith('iam.'))
+    logger.info('Enumeration complete: %d API calls succeeded (%d IAM, %d brute force).',
+                iam_hits + len(output['bruteforce']), iam_hits, len(output['bruteforce']))
+
     return output
 
 
@@ -286,7 +320,6 @@ def enumerate_using_iam(access_key, secret_key, session_token, region, endpoint_
     output = dict()
     logger = logging.getLogger()
 
-    # Connect to the IAM API and start testing.
     logger.info('Starting permission enumeration for access-key-id "%s"', access_key)
     iam_client = boto3.client(
         'iam',
@@ -299,10 +332,9 @@ def enumerate_using_iam(access_key, secret_key, session_token, region, endpoint_
         config=BOTO_CONFIG,
     )
 
-    # Try for the kitchen sink.
     try:
         everything = iam_client.get_account_authorization_details()
-    except RETRYABLE_ERRORS:
+    except SKIPPABLE_ERRORS:
         pass
     else:
         logger.info('Run for the hills, get_account_authorization_details worked!')
@@ -318,7 +350,6 @@ def enumerate_using_iam(access_key, secret_key, session_token, region, endpoint_
 def enumerate_role(iam_client, output):
     logger = logging.getLogger()
 
-    # This is the closest thing we have to a role ARN
     user_or_role_arn = output.get('arn', None)
 
     if user_or_role_arn is None:
@@ -326,7 +357,6 @@ def enumerate_role(iam_client, output):
         # unable to get that piece of information just return
         return
 
-    # Attempt to get role to start.
     try:
         role = iam_client.get_role(RoleName=user_or_role_arn)
     except botocore.exceptions.ClientError as err:
@@ -347,7 +377,6 @@ def enumerate_role(iam_client, output):
         output['iam.get_role'] = remove_metadata(role)
         role_name = role['Role']['RoleName']
 
-    # Attempt to get policies attached to this user.
     try:
         role_policies = iam_client.list_attached_role_policies(RoleName=role_name)
     except botocore.exceptions.ClientError as err:
@@ -361,11 +390,9 @@ def enumerate_role(iam_client, output):
             len(role_policies['AttachedPolicies'])
         )
 
-        # List all policies, if present.
         for policy in role_policies['AttachedPolicies']:
             logger.info('-- Policy "%s" (%s)', policy['PolicyName'], policy['PolicyArn'])
 
-    # Attempt to get inline policies for this user.
     try:
         role_policies = iam_client.list_role_policies(RoleName=role_name)
     except botocore.exceptions.ClientError as err:
@@ -379,7 +406,6 @@ def enumerate_role(iam_client, output):
             len(role_policies['PolicyNames'])
         )
 
-        # List all policies, if present.
         for policy in role_policies['PolicyNames']:
             logger.info('-- Policy "%s"', policy)
 
@@ -390,10 +416,9 @@ def enumerate_user(iam_client, output):
     logger = logging.getLogger()
     output['root_account'] = False
 
-    # Attempt to get user to start.
     try:
         user = iam_client.get_user()
-    except RETRYABLE_ERRORS as err:
+    except SKIPPABLE_ERRORS as err:
         arn, arn_id, arn_path = report_arn(str(err))
 
         output['arn'] = arn
@@ -408,7 +433,6 @@ def enumerate_user(iam_client, output):
 
     if 'UserName' not in user['User']:
         if user['User']['Arn'].endswith(':root'):
-            # OMG
             logger.warning('Found root credentials!')
             output['root_account'] = True
             return
@@ -418,7 +442,6 @@ def enumerate_user(iam_client, output):
     else:
         user_name = user['User']['UserName']
 
-    # Attempt to get policies attached to this user.
     try:
         user_policies = iam_client.list_attached_user_policies(UserName=user_name)
     except botocore.exceptions.ClientError as err:
@@ -432,11 +455,9 @@ def enumerate_user(iam_client, output):
             len(user_policies['AttachedPolicies'])
         )
 
-        # List all policies, if present.
         for policy in user_policies['AttachedPolicies']:
             logger.info('-- Policy "%s" (%s)', policy['PolicyName'], policy['PolicyArn'])
 
-    # Attempt to get inline policies for this user.
     try:
         user_policies = iam_client.list_user_policies(UserName=user_name)
     except botocore.exceptions.ClientError as err:
@@ -450,11 +471,9 @@ def enumerate_user(iam_client, output):
             len(user_policies['PolicyNames'])
         )
 
-        # List all policies, if present.
         for policy in user_policies['PolicyNames']:
             logger.info('-- Policy "%s"', policy)
 
-    # Attempt to get the groups attached to this user.
     user_groups = dict()
     user_groups['Groups'] = []
 
@@ -471,7 +490,6 @@ def enumerate_user(iam_client, output):
             len(user_groups['Groups'])
         )
 
-    # Attempt to get the group policies
     output['iam.list_group_policies'] = dict()
 
     for group in user_groups['Groups']:
@@ -486,7 +504,6 @@ def enumerate_user(iam_client, output):
                 len(group_policy['PolicyNames'])
             )
 
-            # List all group policy names.
             for policy in group_policy['PolicyNames']:
                 logger.info('---- Policy "%s"', policy)
         except botocore.exceptions.ClientError as err:

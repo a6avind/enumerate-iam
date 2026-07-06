@@ -2,18 +2,14 @@
 import json
 import argparse
 
-from enumerate_iam.main import enumerate_iam
-from enumerate_iam.utils.json_utils import json_encoder
+from enumerate_iam.main import enumerate_iam, json_encoder
 
 
 def main():
     parser = argparse.ArgumentParser(description='Enumerate IAM permissions')
 
-    # Optional: when omitted, boto3's default credential chain is used
-    # (AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY env vars, AWS_PROFILE, shared
-    # config files, or an instance/container role). Passing keys on the command
-    # line leaks them into `ps` output and shell history, so the env/profile
-    # path is preferred.
+    # Omit to use boto3's default chain (env/profile/role); prefer that over
+    # passing keys on the CLI, which leak into `ps` and shell history.
     parser.add_argument('--access-key', help='AWS access key (else env/profile)')
     parser.add_argument('--secret-key', help='AWS secret key (else env/profile)')
     parser.add_argument('--session-token', help='STS session token')
@@ -23,6 +19,8 @@ def main():
                         help='List the operations that would be tested and exit, without calling AWS')
     parser.add_argument('--output', metavar='FILE',
                         help='Write JSON results to FILE instead of stdout')
+    parser.add_argument('--verbose', action='store_true',
+                        help='Show all progress chatter (default shows only findings, identity and summary)')
 
     args = parser.parse_args()
 
@@ -31,7 +29,8 @@ def main():
                            args.session_token,
                            args.region,
                            endpoint_url=args.endpoint_url,
-                           dry_run=args.dry_run)
+                           dry_run=args.dry_run,
+                           verbose=args.verbose)
 
     if not args.dry_run:
         results = json.dumps(output, indent=4, default=json_encoder, sort_keys=True)
