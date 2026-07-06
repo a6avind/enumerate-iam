@@ -13,11 +13,11 @@ $ ./enumerate-iam.py --access-key AKIA... --secret-key StF0q...
 [INFO] Enumeration complete: 4 API calls succeeded (1 IAM, 3 brute force).
 ```
 
-By default only the results are shown — the caller's identity (cyan), the found
-permissions (green), and a summary — with the routine progress chatter hidden;
-pass `--verbose` for the full log. Logs go to stderr (with colours on a real
-terminal); the full result set is printed as JSON to stdout at the end, so you
-can pipe it to `jq` or a file. Now you do!
+The terminal shows only the results — the caller's identity (cyan), the found
+permissions (green), and a summary — with the routine progress chatter hidden
+(pass `--verbose` for the full log). The complete JSON is written to an
+auto-named file (`enumerate-iam-<account-id>.json`) rather than dumped to the
+screen; use `--output -` to send it to stdout for piping to `jq`. Now you do!
 
 `enumerate-iam.py` tries to brute force all API calls allowed by the IAM policy.
 The calls performed by this tool are all non-destructive (only get* and list*
@@ -31,8 +31,8 @@ calls are performed).
 --session-token   STS session token
 --region          AWS region to send API requests to (default: us-east-1)
 --endpoint-url    Override the AWS endpoint URL (e.g. a localstack or proxy URL)
---output [FILE]   Write JSON results to a file (default: stdout). Bare --output
-                  auto-names it enumerate-iam-<account-id>.json
+--output FILE     Where to write full JSON results: a path, or - for stdout
+                  (default: auto-named enumerate-iam-<account-id>.json)
 --dry-run         List the operations that would be tested and exit
 --verbose         Show all progress chatter (default shows only the results)
 ```
