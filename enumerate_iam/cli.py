@@ -1,3 +1,4 @@
+import re
 import json
 import argparse
 
@@ -50,7 +51,8 @@ def main():
                         help='Extra random 0..N seconds added to --delay per call '
                              '(default %(default)s)')
     parser.add_argument('--timeout', metavar='MINUTES', type=float,
-                        help='Wall-clock cap on the brute-force/probe phases')
+                        help='Wall-clock cap applied per region and per pass '
+                             '(read/probe), not a single global deadline')
     parser.add_argument('--dry-run', action='store_true',
                         help='List the operations that would be tested and exit, without calling AWS')
     parser.add_argument('--verbose', action='store_true',
@@ -110,7 +112,11 @@ def main():
         else:
             dest = args.output
             if dest == AUTO_OUTPUT:
-                dest = 'enumerate-iam-%s.json' % (account_id(output) or 'unknown')
+                # account_id comes from the (endpoint-controlled) STS/ARN response,
+                # so strip it to an allowlist before it lands in the filename —
+                # otherwise a crafted id could traverse out of the cwd.
+                acct = re.sub(r'[^A-Za-z0-9_-]', '', account_id(output) or '') or 'unknown'
+                dest = 'enumerate-iam-%s.json' % acct
             with open(dest, 'w') as handle:
                 handle.write(results + '\n')
             print('Full results written to %s' % dest)

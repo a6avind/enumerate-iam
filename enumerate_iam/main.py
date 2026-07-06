@@ -50,7 +50,7 @@ DEFAULT_DELAY = 2.0
 DEFAULT_JITTER = 5.0
 
 # How often (seconds) a running pass emits a progress heartbeat.
-HEARTBEAT_SECONDS = 30
+HEARTBEAT_SECONDS = 100
 REQUEST_DELAY = DEFAULT_DELAY
 REQUEST_JITTER = DEFAULT_JITTER
 
@@ -65,8 +65,8 @@ def _throttle():
         time.sleep(delay)
 
 
-# max_attempts was 30, which made unreachable endpoints hang for minutes.
-# adaptive mode adds client-side rate limiting so bursts don't trip throttling.
+# Short timeouts + few retries so unreachable endpoints fail fast; adaptive mode
+# adds client-side rate limiting so bursts don't trip throttling.
 BOTO_CONFIG = Config(
     connect_timeout=5,
     read_timeout=5,
@@ -131,17 +131,33 @@ def report_arn(candidate):
     Identity is printed once by get_identity() (authoritative sts call); this is
     a silent extractor so the ARN/id aren't logged a second time.
     """
-    arn_search = re.search(r'.*(arn:aws:.*?) .*', candidate)
-
+    # \S+ (not '.*? ') so an ARN at the end of the string still matches; trailing
+    # prose punctuation is stripped. A malformed ARN with too few fields is
+    # treated as no match rather than crashing the run on an index error.
+    arn_search = re.search(r'(arn:aws:\S+)', candidate)
     if arn_search:
-        arn = arn_search.group(1)
-
-        arn_id = arn.split(':')[4]
-        arn_path = arn.split(':')[5]
-
-        return arn, arn_id, arn_path
+        arn = arn_search.group(1).rstrip('.,;:')
+        parts = arn.split(':')
+        if len(parts) > 5:
+            return arn, parts[4], parts[5]
 
     return None, None, None
+
+
+def _role_name_from_arn(arn):
+    """Bare IAM role name from a role or assumed-role ARN, else None. The iam
+    role/policy calls take the role NAME, not the ARN:
+      arn:aws:iam::acct:role/path/Name            -> Name
+      arn:aws:sts::acct:assumed-role/Name/session -> Name
+    A user (or otherwise non-role) ARN returns None.
+    """
+    resource = arn.split(':')[-1]
+    parts = resource.split('/')
+    if parts[0] == 'assumed-role' and len(parts) >= 2:
+        return parts[1]
+    if parts[0] == 'role' and len(parts) >= 2:
+        return parts[-1]
+    return None
 
 
 def action_from_key(session, key):
@@ -196,8 +212,11 @@ def get_identity(access_key, secret_key, session_token, region, endpoint_url):
     return identity
 
 
-def _run_read_pass(args, timeout=None, threads=MAX_THREADS, label=''):
-    """Call each (…, service, operation) tuple, capturing responses that work."""
+def _run_read_pass(args, timeout=None, threads=MAX_THREADS, label='', worker=None):
+    """Run `worker` over each (…, service, operation) tuple, keeping the
+    (key, value) tuples it returns for the calls that pass authorization.
+    Shared by the brute-force read pass and the probe pass."""
+    worker = worker or check_one_permission
     output = dict()
     logger = logging.getLogger()
     total = len(args)
@@ -210,7 +229,7 @@ def _run_read_pass(args, timeout=None, threads=MAX_THREADS, label=''):
     try:
         try:
             for done, thread_result in enumerate(
-                    pool.imap_unordered(check_one_permission, args), start=1):
+                    pool.imap_unordered(worker, args), start=1):
                 now = time.monotonic()
                 if deadline and now > deadline:
                     logger.warning('Timeout reached after %d/%d calls; stopping.', done, total)
@@ -238,7 +257,7 @@ def _run_read_pass(args, timeout=None, threads=MAX_THREADS, label=''):
 
 def enumerate_using_bruteforce(access_key, secret_key, session_token, region,
                                endpoint_url=None, services=None, timeout=None,
-                               threads=MAX_THREADS):
+                               threads=MAX_THREADS, label=None):
     """
     Attempt to brute-force common describe calls.
     """
@@ -246,43 +265,62 @@ def enumerate_using_bruteforce(access_key, secret_key, session_token, region,
     logger.info('Attempting common-service describe / list brute force.')
 
     args = list(generate_args(access_key, secret_key, session_token, region, endpoint_url, services))
-    return _run_read_pass(args, timeout, threads, label=region)
+    return _run_read_pass(args, timeout, threads, label=label or region)
 
 
-def generate_all_read_args(session, access_key, secret_key, session_token, region,
-                           endpoint_url, services=None):
-    """Every zero-arg list_/describe_/get_ operation across all botocore services.
+_READ_OP_CACHE = {}
 
-    Superset of the curated BRUTEFORCE_TESTS set; param-requiring reads are left
-    to --probe (which confirms authz but can't capture a response to scan)."""
-    service_names = [s for s in session.get_available_services()
-                     if services is None or s in services]
-    random.shuffle(service_names)
 
-    for service_name in service_names:
-        model = session.get_service_model(service_name)
-        for wire_name in model.operation_names:
-            operation = xform_name(wire_name)
-            if not operation.startswith(('list_', 'describe_', 'get_')):
+def _service_read_ops(services, require_params):
+    """(service, snake_operation) pairs for the read ops of the requested kind.
+    require_params=False selects zero-arg ops (the brute-force sweep, whose
+    responses scan_secrets reads back); require_params=True selects the
+    parameter-requiring ops confirmed by the probe pass via error-code analysis.
+
+    Parsed from the botocore models once and cached: the pairs are region- and
+    credential-independent, so a multi-region sweep must not re-load every
+    service model (ec2 alone is multi-MB) per region and per pass."""
+    cache_key = (require_params, None if services is None else frozenset(services))
+    if cache_key not in _READ_OP_CACHE:
+        session = botocore.session.get_session()
+        pairs = []
+        for service_name in session.get_available_services():
+            if services is not None and service_name not in services:
                 continue
-            input_shape = model.operation_model(wire_name).input_shape
-            if input_shape is not None and input_shape.required_members:
-                continue
-            yield access_key, secret_key, session_token, region, endpoint_url, service_name, operation
+            model = session.get_service_model(service_name)
+            for wire_name in model.operation_names:
+                operation = xform_name(wire_name)
+                if not operation.startswith(('list_', 'describe_', 'get_')):
+                    continue
+                input_shape = model.operation_model(wire_name).input_shape
+                has_params = bool(input_shape is not None and input_shape.required_members)
+                if has_params != require_params:
+                    continue
+                pairs.append((service_name, operation))
+        _READ_OP_CACHE[cache_key] = pairs
+    return _READ_OP_CACHE[cache_key]
+
+
+def _model_read_args(access_key, secret_key, session_token, region,
+                     endpoint_url, services, require_params):
+    """Call tuples for one region, from the cached (service, operation) pairs."""
+    pairs = list(_service_read_ops(services, require_params))
+    random.shuffle(pairs)
+    for service_name, operation in pairs:
+        yield access_key, secret_key, session_token, region, endpoint_url, service_name, operation
 
 
 def enumerate_all_services(access_key, secret_key, session_token, region,
                            endpoint_url=None, services=None, timeout=None,
-                           threads=MAX_THREADS):
+                           threads=MAX_THREADS, label=None):
     """Sweep every zero-arg read op across all services, capturing responses so
     scan_secrets sees the widest possible surface (slow, many calls)."""
     logger = logging.getLogger()
     logger.info('Sweeping every zero-arg read operation across all services (slow).')
 
-    session = botocore.session.get_session()
-    args = list(generate_all_read_args(session, access_key, secret_key, session_token,
-                                       region, endpoint_url, services))
-    return _run_read_pass(args, timeout, threads, label=region)
+    args = list(_model_read_args(access_key, secret_key, session_token,
+                                 region, endpoint_url, services, require_params=False))
+    return _run_read_pass(args, timeout, threads, label=label or region)
 
 
 def generate_args(access_key, secret_key, session_token, region, endpoint_url, services=None):
@@ -298,7 +336,7 @@ def generate_args(access_key, secret_key, session_token, region, endpoint_url, s
 
 
 def get_client(access_key, secret_key, session_token, service_name, region, endpoint_url=None):
-    key = '%s-%s-%s-%s-%s-%s' % (access_key, secret_key, session_token, service_name, region, endpoint_url)
+    key = (access_key, secret_key, session_token, service_name, region, endpoint_url)
 
     client = CLIENT_POOL.get(key, None)
     if client is not None:
@@ -318,7 +356,7 @@ def get_client(access_key, secret_key, session_token, service_name, region, endp
             verify=False,
             config=BOTO_CONFIG,
         )
-    except:
+    except Exception:
         # The service might not be available in this region
         return
 
@@ -447,65 +485,20 @@ def check_one_probe(arg_tuple):
 
     logger = logging.getLogger()
     logger.info('-- %s.%s() permission confirmed (probe)', service_name, operation_name)
-    return '%s.%s' % (service_name, operation_name)
-
-
-def generate_probe_args(session, access_key, secret_key, session_token, region,
-                        endpoint_url, services=None):
-    service_names = [s for s in session.get_available_services()
-                     if services is None or s in services]
-    random.shuffle(service_names)
-
-    for service_name in service_names:
-        model = session.get_service_model(service_name)
-        for wire_name in model.operation_names:
-            operation = xform_name(wire_name)
-            if not operation.startswith(('list_', 'describe_', 'get_')):
-                continue
-            input_shape = model.operation_model(wire_name).input_shape
-            if input_shape is None or not input_shape.required_members:
-                continue  # zero-arg ops are covered by the brute-force pass
-            yield access_key, secret_key, session_token, region, endpoint_url, service_name, operation
+    return '%s.%s' % (service_name, operation_name), {'confirmed_via': 'probe'}
 
 
 def enumerate_using_probe(access_key, secret_key, session_token, region,
                           endpoint_url=None, services=None, timeout=None,
-                          threads=MAX_THREADS):
+                          threads=MAX_THREADS, label=None):
     """Confirm parameter-requiring read permissions via error-code analysis."""
-    output = dict()
     logger = logging.getLogger()
     logger.info('Probing parameter-requiring read operations (may take a while).')
 
-    session = botocore.session.get_session()
-    args = list(generate_probe_args(session, access_key, secret_key, session_token,
-                                    region, endpoint_url, services))
-    total = len(args)
-    start = time.monotonic()
-    deadline = start + timeout if timeout else None
-    last_beat = start
-
-    pool = ThreadPool(threads)
-    try:
-        try:
-            for done, key in enumerate(pool.imap_unordered(check_one_probe, args), start=1):
-                now = time.monotonic()
-                if deadline and now > deadline:
-                    logger.warning('Timeout reached; stopping probe.')
-                    break
-                if now - last_beat >= HEARTBEAT_SECONDS or done == total:
-                    last_beat = now
-                    logger.info('Progress: probe %s %d/%d calls (%d%%), %d found',
-                                region, done, total, 100 * done // total, len(output))
-                if key is not None:
-                    output[key] = {'confirmed_via': 'probe'}
-        except KeyboardInterrupt:
-            print('')
-            logger.info('Ctrl+C received, stopping all threads.')
-    finally:
-        pool.terminate()
-        pool.join()
-
-    return output
+    args = list(_model_read_args(access_key, secret_key, session_token,
+                                 region, endpoint_url, services, require_params=True))
+    return _run_read_pass(args, timeout, threads,
+                          label='probe %s' % (label or region), worker=check_one_probe)
 
 
 # Keys whose value is a secret by virtue of the name (env-var style k/v maps:
@@ -816,12 +809,19 @@ def enumerate_iam(access_key, secret_key, session_token, region, endpoint_url=No
     logger = logging.getLogger()
 
     if dry_run:
-        total = sum(len(ops) for ops in BRUTEFORCE_TESTS.values())
+        # Preview the set the real run would test: the all-services sweep by
+        # default, the curated set under --curated (full=False).
+        if full:
+            pairs = sorted(_service_read_ops(services, require_params=False))
+        else:
+            pairs = sorted((s, op) for s in BRUTEFORCE_TESTS
+                           for op in BRUTEFORCE_TESTS[s]
+                           if services is None or s in services)
+        service_count = len({s for s, _ in pairs})
         logger.info('Dry run: would test %d operations across %d services '
-                    '(no AWS API calls made).', total, len(BRUTEFORCE_TESTS))
-        for service_name in sorted(BRUTEFORCE_TESTS):
-            for operation_name in BRUTEFORCE_TESTS[service_name]:
-                logger.info('-- %s.%s', service_name, operation_name)
+                    '(no AWS API calls made).', len(pairs), service_count)
+        for service_name, operation_name in pairs:
+            logger.info('-- %s.%s', service_name, operation_name)
         return output
 
     if access_key is None and secret_key is None:
@@ -856,15 +856,18 @@ def enumerate_iam(access_key, secret_key, session_token, region, endpoint_url=No
     read_pass = enumerate_all_services if full else enumerate_using_bruteforce
     output['bruteforce'] = {}
     output['probe'] = {} if probe else None
-    for reg in region_list:
+    for idx, reg in enumerate(region_list, start=1):
+        reg_label = '[%d/%d] %s' % (idx, len(region_list), reg) if multi else reg
         if multi:
-            logger.info('--- Region %s ---', reg)
+            logger.info('--- Region %s ---', reg_label)
         output['bruteforce'].update(_tag_region(read_pass(
-            access_key, secret_key, session_token, reg, endpoint_url, services, timeout, threads),
+            access_key, secret_key, session_token, reg, endpoint_url, services, timeout, threads,
+            label=reg_label),
             reg, multi))
         if probe:
             output['probe'].update(_tag_region(enumerate_using_probe(
-                access_key, secret_key, session_token, reg, endpoint_url, services, timeout, threads),
+                access_key, secret_key, session_token, reg, endpoint_url, services, timeout, threads,
+                label=reg_label),
                 reg, multi))
 
     if output['probe'] is None:
@@ -913,69 +916,52 @@ def enumerate_using_iam(access_key, secret_key, session_token, region, endpoint_
     return output
 
 
+def _list_iam(iam_client, method, output, out_key, count_field, summary, name, **kwargs):
+    """Call a single-kwarg iam list_ method; on success store remove_metadata()
+    under out_key, log `summary % (name, count)`, and return the count_field
+    list so the caller can log each entry. Missing permission (ClientError) -> None."""
+    try:
+        resp = getattr(iam_client, method)(**kwargs)
+    except botocore.exceptions.ClientError:
+        return None
+    output[out_key] = remove_metadata(resp)
+    logging.getLogger().info(summary, name, len(resp[count_field]))
+    return resp[count_field]
+
+
 def enumerate_role(iam_client, output):
     logger = logging.getLogger()
 
-    user_or_role_arn = output.get('arn', None)
+    arn = output.get('arn')
+    if arn is None:
+        return
 
-    if user_or_role_arn is None:
-        # The checks which follow all required the user name to run, if we were
-        # unable to get that piece of information just return
+    # output['arn'] is a full ARN (set by enumerate_user from a denied get_user);
+    # the role/policy calls below take the bare role name, not the ARN. A non-role
+    # (user) ARN yields None -> nothing to enumerate.
+    role_name = _role_name_from_arn(arn)
+    if role_name is None:
         return
 
     try:
-        role = iam_client.get_role(RoleName=user_or_role_arn)
-    except botocore.exceptions.ClientError as err:
-        arn, arn_id, arn_path = report_arn(str(err))
-
-        if arn is not None:
-            output['arn'] = arn
-            output['arn_id'] = arn_id
-            output['arn_path'] = arn_path
-
-        if 'role' not in user_or_role_arn:
-            # We did out best, but we got nothing from iam
-            return
-        else:
-            role_name = user_or_role_arn
-
+        role = iam_client.get_role(RoleName=role_name)
+    except botocore.exceptions.ClientError:
+        pass
     else:
         output['iam.get_role'] = remove_metadata(role)
         role_name = role['Role']['RoleName']
 
-    try:
-        role_policies = iam_client.list_attached_role_policies(RoleName=role_name)
-    except botocore.exceptions.ClientError:
-        pass
-    else:
-        output['iam.list_attached_role_policies'] = remove_metadata(role_policies)
+    for policy in _list_iam(iam_client, 'list_attached_role_policies', output,
+                            'iam.list_attached_role_policies', 'AttachedPolicies',
+                            'Role "%s" has %d attached policies', role_name,
+                            RoleName=role_name) or []:
+        logger.info('-- Policy "%s" (%s)', policy['PolicyName'], policy['PolicyArn'])
 
-        logger.info(
-            'Role "%s" has %0d attached policies',
-            role_name,
-            len(role_policies['AttachedPolicies'])
-        )
-
-        for policy in role_policies['AttachedPolicies']:
-            logger.info('-- Policy "%s" (%s)', policy['PolicyName'], policy['PolicyArn'])
-
-    try:
-        role_policies = iam_client.list_role_policies(RoleName=role_name)
-    except botocore.exceptions.ClientError:
-        pass
-    else:
-        output['iam.list_role_policies'] = remove_metadata(role_policies)
-
-        logger.info(
-            'Role "%s" has %0d inline policies',
-            role_name,
-            len(role_policies['PolicyNames'])
-        )
-
-        for policy in role_policies['PolicyNames']:
-            logger.info('-- Policy "%s"', policy)
-
-    return output
+    for policy in _list_iam(iam_client, 'list_role_policies', output,
+                            'iam.list_role_policies', 'PolicyNames',
+                            'Role "%s" has %d inline policies', role_name,
+                            RoleName=role_name) or []:
+        logger.info('-- Policy "%s"', policy)
 
 
 def enumerate_user(iam_client, output):
@@ -1008,64 +994,33 @@ def enumerate_user(iam_client, output):
     else:
         user_name = user['User']['UserName']
 
-    try:
-        user_policies = iam_client.list_attached_user_policies(UserName=user_name)
-    except botocore.exceptions.ClientError:
-        pass
-    else:
-        output['iam.list_attached_user_policies'] = remove_metadata(user_policies)
+    for policy in _list_iam(iam_client, 'list_attached_user_policies', output,
+                            'iam.list_attached_user_policies', 'AttachedPolicies',
+                            'User "%s" has %d attached policies', user_name,
+                            UserName=user_name) or []:
+        logger.info('-- Policy "%s" (%s)', policy['PolicyName'], policy['PolicyArn'])
 
-        logger.info(
-            'User "%s" has %0d attached policies',
-            user_name,
-            len(user_policies['AttachedPolicies'])
-        )
+    for policy in _list_iam(iam_client, 'list_user_policies', output,
+                            'iam.list_user_policies', 'PolicyNames',
+                            'User "%s" has %d inline policies', user_name,
+                            UserName=user_name) or []:
+        logger.info('-- Policy "%s"', policy)
 
-        for policy in user_policies['AttachedPolicies']:
-            logger.info('-- Policy "%s" (%s)', policy['PolicyName'], policy['PolicyArn'])
-
-    try:
-        user_policies = iam_client.list_user_policies(UserName=user_name)
-    except botocore.exceptions.ClientError:
-        pass
-    else:
-        output['iam.list_user_policies'] = remove_metadata(user_policies)
-
-        logger.info(
-            'User "%s" has %0d inline policies',
-            user_name,
-            len(user_policies['PolicyNames'])
-        )
-
-        for policy in user_policies['PolicyNames']:
-            logger.info('-- Policy "%s"', policy)
-
-    user_groups = dict()
-    user_groups['Groups'] = []
-
-    try:
-        user_groups = iam_client.list_groups_for_user(UserName=user_name)
-    except botocore.exceptions.ClientError:
-        pass
-    else:
-        output['iam.list_groups_for_user'] = remove_metadata(user_groups)
-
-        logger.info(
-            'User "%s" has %0d groups associated',
-            user_name,
-            len(user_groups['Groups'])
-        )
+    groups = _list_iam(iam_client, 'list_groups_for_user', output,
+                       'iam.list_groups_for_user', 'Groups',
+                       'User "%s" has %d groups associated', user_name,
+                       UserName=user_name) or []
 
     output['iam.list_group_policies'] = dict()
 
-    for group in user_groups['Groups']:
+    for group in groups:
         try:
             group_policy = iam_client.list_group_policies(GroupName=group['GroupName'])
 
             output['iam.list_group_policies'][group['GroupName']] = remove_metadata(group_policy)
 
             logger.info(
-                '-- Group "%s" has %0d inline policies',
+                '-- Group "%s" has %d inline policies',
                 group['GroupName'],
                 len(group_policy['PolicyNames'])
             )
@@ -1074,6 +1029,4 @@ def enumerate_user(iam_client, output):
                 logger.info('---- Policy "%s"', policy)
         except botocore.exceptions.ClientError:
             pass
-
-    return output
 

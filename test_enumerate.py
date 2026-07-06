@@ -130,6 +130,47 @@ def test_dummy_for_shape():
     assert main.dummy_for_shape(s(type_name='boolean', metadata={})) is False
 
 
+def test_role_name_from_arn():
+    assert main._role_name_from_arn('arn:aws:iam::123456789012:role/App') == 'App'
+    assert main._role_name_from_arn('arn:aws:iam::123456789012:role/path/to/App') == 'App'
+    assert main._role_name_from_arn('arn:aws:sts::123456789012:assumed-role/App/sess-1') == 'App'
+    assert main._role_name_from_arn('arn:aws:iam::123456789012:user/bob') is None
+
+
+def test_report_arn():
+    arn, aid, path = main.report_arn('User: arn:aws:iam::123456789012:user/bob is not authorized')
+    assert arn == 'arn:aws:iam::123456789012:user/bob' and aid == '123456789012' and path == 'user/bob'
+    # ARN at the very end of the message (no trailing space) still matches
+    arn, aid, path = main.report_arn('performed by arn:aws:sts::123456789012:assumed-role/App/sess')
+    assert arn.endswith('assumed-role/App/sess') and aid == '123456789012'
+    # malformed / short ARN -> no crash, no match (was an IndexError before)
+    assert main.report_arn('boom arn:aws:sts and more') == (None, None, None)
+    assert main.report_arn('no arn here at all') == (None, None, None)
+
+
+def test_list_iam():
+    class C:
+        def list_x(self, **kw):
+            return {'ResponseMetadata': {}, 'Items': ['a', 'b']}
+
+        def denied(self, **kw):
+            raise client_error('AccessDenied')
+
+    out = {}
+    items = main._list_iam(C(), 'list_x', out, 'iam.x', 'Items', 'N=%s %d', 'nm', Foo=1)
+    assert items == ['a', 'b']
+    assert out['iam.x'] == {'Items': ['a', 'b']}  # metadata stripped, stored under key
+    # missing permission -> None, nothing stored
+    assert main._list_iam(C(), 'denied', out, 'iam.denied', 'Items', 'x', 'n') is None
+    assert 'iam.denied' not in out
+
+
+def test_service_read_ops_cached():
+    a = main._service_read_ops({'s3'}, False)
+    b = main._service_read_ops({'s3'}, False)
+    assert a is b and len(a) > 0  # parsed once, reused across regions/passes
+
+
 def _run_check(monkeypatch_client, op):
     main.CLIENT_POOL.clear()
     main.get_client = lambda *a, **k: monkeypatch_client
@@ -161,13 +202,13 @@ def test_check_one_probe():
         arg = _run_check(fake_probe_client(client_error('Throttling')), 'get_bucket_policy')
         assert main.check_one_probe(arg) is None
 
-        # validation error -> passed authz -> confirmed
+        # validation error -> passed authz -> confirmed (key, marker) tuple
         arg = _run_check(fake_probe_client(client_error('ValidationException')), 'get_bucket_policy')
-        assert main.check_one_probe(arg) == 's3.get_bucket_policy'
+        assert main.check_one_probe(arg) == ('s3.get_bucket_policy', {'confirmed_via': 'probe'})
 
         # outright success -> confirmed
         arg = _run_check(fake_probe_client(None), 'get_bucket_policy')
-        assert main.check_one_probe(arg) == 's3.get_bucket_policy'
+        assert main.check_one_probe(arg) == ('s3.get_bucket_policy', {'confirmed_via': 'probe'})
     finally:
         main.get_client = orig
 

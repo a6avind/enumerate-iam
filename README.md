@@ -44,7 +44,7 @@ scans every captured response for hardcoded secrets.
 --threads N       Concurrent API calls (default 25; lower to avoid throttling)
 --delay SECONDS   Base sleep before each API call (default 2.0; 0 disables)
 --jitter SECONDS  Extra random 0..N seconds added to --delay per call (default 5.0)
---timeout MINUTES Wall-clock cap on the read/probe phases
+--timeout MINUTES Wall-clock cap per region and per pass (not a global deadline)
 --dry-run         List the operations that would be tested and exit
 --verbose         Show all progress chatter (default shows only the useful lines)
 ```
@@ -84,7 +84,9 @@ Each API call sleeps `--delay + random(0, --jitter)` seconds first — **2 to 7
 seconds by default** — to stay low-and-slow under rate limits and detection.
 Combined with all-services × all-regions this makes a default run deliberately
 long; `--delay 0` disables throttling, and `--threads` / `--timeout` /
-`--services` / `--region` bound the scope.
+`--services` / `--region` bound the scope. Note `--timeout` caps each region and
+each pass (read/probe) separately, not the whole run — an all-region sweep can run
+many times the per-pass value.
 
 ### Secret scanning
 
@@ -119,7 +121,7 @@ reported in full to be directly actionable.
   "key": "DB_PASSWORD",
   "value": "Sup3rSecretP@ssw0rd!!",
   "reasons": ["secret-named key 'DB_PASSWORD'"],
-  "location": "bruteforce.lambda.list_functions.Functions[0].Environment.Variables.DB_PASSWORD"
+  "location": "bruteforce.lambda.list_functions@us-east-1.Functions[0].Environment.Variables.DB_PASSWORD"
 }
 ```
 
@@ -168,6 +170,7 @@ results = enumerate_iam(access_key,
                         services=None,
                         probe=False,
                         full=True,          # sweep all services (False = curated set)
+                        timeout=None,       # seconds, capped per region per pass (None = uncapped)
                         regions=None,       # list of regions (None = the single `region`)
                         threads=25,
                         delay=2.0,
