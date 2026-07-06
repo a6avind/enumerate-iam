@@ -100,6 +100,8 @@ def test_remove_metadata():
 
 
 def test_account_id():
+    # STS identity wins even when iam.get_user was denied (no arn_id, no user arn).
+    assert main.account_id({'identity': {'Account': '111122223333'}, 'iam': {}}) == '111122223333'
     assert main.account_id({'iam': {'arn_id': '123456789012'}}) == '123456789012'
     nested = {'iam': {'iam.get_user': {'User': {'Arn': 'arn:aws:iam::999988887777:user/bob'}}}}
     assert main.account_id(nested) == '999988887777'

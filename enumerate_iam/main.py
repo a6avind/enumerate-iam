@@ -48,6 +48,9 @@ MAX_PAGINATED_ITEMS = 5000
 # call. Default 2-7s keeps the sweep low-and-slow under rate limits / detection.
 DEFAULT_DELAY = 2.0
 DEFAULT_JITTER = 5.0
+
+# How often (seconds) a running pass emits a progress heartbeat.
+HEARTBEAT_SECONDS = 30
 REQUEST_DELAY = DEFAULT_DELAY
 REQUEST_JITTER = DEFAULT_JITTER
 
@@ -106,6 +109,11 @@ def json_encoder(obj):
 
 def account_id(output):
     """Best-effort AWS account id from an enumerate_iam() result, or None."""
+    # sts:GetCallerIdentity is authoritative and needs no perms; prefer it.
+    account = output.get('identity', {}).get('Account')
+    if account:
+        return account
+
     iam = output.get('iam', {})
     if iam.get('arn_id'):
         return iam['arn_id']
@@ -188,23 +196,30 @@ def get_identity(access_key, secret_key, session_token, region, endpoint_url):
     return identity
 
 
-def _run_read_pass(args, timeout=None, threads=MAX_THREADS):
+def _run_read_pass(args, timeout=None, threads=MAX_THREADS, label=''):
     """Call each (…, service, operation) tuple, capturing responses that work."""
     output = dict()
     logger = logging.getLogger()
     total = len(args)
-    deadline = time.monotonic() + timeout if timeout else None
+    start = time.monotonic()
+    deadline = start + timeout if timeout else None
+    last_beat = start
+    where = '%s ' % label if label else ''
 
     pool = ThreadPool(threads)
     try:
         try:
             for done, thread_result in enumerate(
                     pool.imap_unordered(check_one_permission, args), start=1):
-                if deadline and time.monotonic() > deadline:
+                now = time.monotonic()
+                if deadline and now > deadline:
                     logger.warning('Timeout reached after %d/%d calls; stopping.', done, total)
                     break
-                if done % 250 == 0 or done == total:
-                    logger.debug('Progress: %d/%d calls tested', done, total)
+                # Periodic heartbeat so a long, throttled run visibly progresses.
+                if now - last_beat >= HEARTBEAT_SECONDS or done == total:
+                    last_beat = now
+                    logger.info('Progress: %s%d/%d calls (%d%%), %d found',
+                                where, done, total, 100 * done // total, len(output))
                 if thread_result is None:
                     continue
                 key, action_result = thread_result
@@ -231,7 +246,7 @@ def enumerate_using_bruteforce(access_key, secret_key, session_token, region,
     logger.info('Attempting common-service describe / list brute force.')
 
     args = list(generate_args(access_key, secret_key, session_token, region, endpoint_url, services))
-    return _run_read_pass(args, timeout, threads)
+    return _run_read_pass(args, timeout, threads, label=region)
 
 
 def generate_all_read_args(session, access_key, secret_key, session_token, region,
@@ -267,7 +282,7 @@ def enumerate_all_services(access_key, secret_key, session_token, region,
     session = botocore.session.get_session()
     args = list(generate_all_read_args(session, access_key, secret_key, session_token,
                                        region, endpoint_url, services))
-    return _run_read_pass(args, timeout, threads)
+    return _run_read_pass(args, timeout, threads, label=region)
 
 
 def generate_args(access_key, secret_key, session_token, region, endpoint_url, services=None):
@@ -464,15 +479,23 @@ def enumerate_using_probe(access_key, secret_key, session_token, region,
     session = botocore.session.get_session()
     args = list(generate_probe_args(session, access_key, secret_key, session_token,
                                     region, endpoint_url, services))
-    deadline = time.monotonic() + timeout if timeout else None
+    total = len(args)
+    start = time.monotonic()
+    deadline = start + timeout if timeout else None
+    last_beat = start
 
     pool = ThreadPool(threads)
     try:
         try:
-            for key in pool.imap_unordered(check_one_probe, args):
-                if deadline and time.monotonic() > deadline:
+            for done, key in enumerate(pool.imap_unordered(check_one_probe, args), start=1):
+                now = time.monotonic()
+                if deadline and now > deadline:
                     logger.warning('Timeout reached; stopping probe.')
                     break
+                if now - last_beat >= HEARTBEAT_SECONDS or done == total:
+                    last_beat = now
+                    logger.info('Progress: probe %s %d/%d calls (%d%%), %d found',
+                                region, done, total, 100 * done // total, len(output))
                 if key is not None:
                     output[key] = {'confirmed_via': 'probe'}
         except KeyboardInterrupt:
@@ -710,7 +733,7 @@ class ColorFormatter(logging.Formatter):
     # The only INFO lines the default (quiet) view keeps: identity, found secrets,
     # the final summary, and root/critical hits. Per-op "worked!" confirmations and
     # progress chatter are dropped here (still in the JSON and under --verbose).
-    QUIET = ACCOUNT + ('Possible secret', 'Enumeration complete',
+    QUIET = ACCOUNT + ('Possible secret', 'Enumeration complete', 'Progress',
                        'Run for the hills', 'root credentials')
 
     def format(self, record):
@@ -929,7 +952,7 @@ def enumerate_role(iam_client, output):
 
         logger.info(
             'Role "%s" has %0d attached policies',
-            role['Role']['RoleName'],
+            role_name,
             len(role_policies['AttachedPolicies'])
         )
 
@@ -944,8 +967,8 @@ def enumerate_role(iam_client, output):
         output['iam.list_role_policies'] = remove_metadata(role_policies)
 
         logger.info(
-            'User "%s" has %0d inline policies',
-            role['Role']['RoleName'],
+            'Role "%s" has %0d inline policies',
+            role_name,
             len(role_policies['PolicyNames'])
         )
 
