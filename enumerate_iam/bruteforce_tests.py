@@ -1,51 +1,150 @@
 BRUTEFORCE_TESTS = {
-    "a4b": [
-        "get_conference_preference",
-        "get_device",
-        "get_invitation_configuration",
-        "get_profile",
-        "get_room",
-        "get_skill_group",
-        "list_business_report_schedules",
-        "list_conference_providers",
-        "list_skills",
-        "list_skills_store_categories"
+    "accessanalyzer": [
+        "list_analyzers",
+        "list_policy_generations"
+    ],
+    "account": [
+        "get_account_information",
+        "get_contact_information",
+        "get_gov_cloud_account_information",
+        "list_regions"
     ],
     "acm": [
+        "get_account_configuration",
+        "list_acme_endpoints",
         "list_certificates"
+    ],
+    "aiops": [
+        "list_investigation_groups"
+    ],
+    "amp": [
+        "get_default_scraper_configuration",
+        "list_scrapers",
+        "list_workspaces"
     ],
     "amplify": [
         "list_apps"
+    ],
+    "amplifybackend": [
+        "list_s3_buckets"
     ],
     "apigateway": [
         "get_account",
         "get_api_keys",
         "get_client_certificates",
+        "get_domain_name_access_associations",
         "get_domain_names",
         "get_rest_apis",
         "get_sdk_types",
         "get_usage_plans",
+        "get_vpc_links"
+    ],
+    "apigatewayv2": [
+        "get_domain_names",
         "get_vpc_links",
-        "get_domain_names"
+        "list_portal_products",
+        "list_portals"
+    ],
+    "appconfig": [
+        "get_account_settings",
+        "list_applications",
+        "list_deployment_strategies",
+        "list_experiment_definitions",
+        "list_extension_associations",
+        "list_extensions"
+    ],
+    "appfabric": [
+        "list_app_bundles"
+    ],
+    "appflow": [
+        "describe_connector_profiles",
+        "describe_connectors",
+        "list_connector_entities",
+        "list_connectors",
+        "list_flows"
+    ],
+    "appintegrations": [
+        "list_applications",
+        "list_data_integrations",
+        "list_event_integrations"
+    ],
+    "application-insights": [
+        "list_applications",
+        "list_configuration_history",
+        "list_problems"
+    ],
+    "application-signals": [
+        "list_grouping_attribute_definitions",
+        "list_service_level_objectives"
+    ],
+    "applicationcostprofiler": [
+        "list_report_definitions"
     ],
     "appmesh": [
-        "list_meshes",
         "list_meshes"
     ],
-    "appstream2": [
+    "apprunner": [
+        "list_auto_scaling_configurations",
+        "list_connections",
+        "list_observability_configurations",
+        "list_services",
+        "list_vpc_connectors",
+        "list_vpc_ingress_connections"
+    ],
+    "appstream": [
+        "describe_app_block_builder_app_block_associations",
+        "describe_app_block_builders",
+        "describe_app_blocks",
+        "describe_application_fleet_associations",
         "describe_directory_configs",
         "describe_fleets",
         "describe_image_builders",
         "describe_images",
-        "describe_user_stack_associations"
+        "describe_usage_report_subscriptions",
+        "describe_user_stack_associations",
+        "get_export_image_task",
+        "list_export_image_tasks"
     ],
     "appsync": [
+        "list_apis",
+        "list_domain_names",
         "list_graphql_apis"
     ],
+    "arc-region-switch": [
+        "list_plans",
+        "list_plans_in_region"
+    ],
+    "arc-zonal-shift": [
+        "get_autoshift_observer_notification_status",
+        "list_autoshifts",
+        "list_managed_resources",
+        "list_zonal_shifts"
+    ],
+    "artifact": [
+        "get_account_settings",
+        "list_compliance_inquiries",
+        "list_customer_agreements",
+        "list_reports"
+    ],
     "athena": [
+        "list_application_dpu_sizes",
+        "list_capacity_reservations",
+        "list_data_catalogs",
+        "list_engine_versions",
         "list_named_queries",
         "list_query_executions",
         "list_work_groups"
+    ],
+    "auditmanager": [
+        "get_account_status",
+        "get_delegations",
+        "get_insights",
+        "get_organization_admin_account",
+        "get_services_in_scope",
+        "list_assessment_reports",
+        "list_assessments",
+        "list_control_domain_insights",
+        "list_notifications"
     ],
     "autoscaling": [
         "describe_account_limits",
@@ -64,32 +163,222 @@ BRUTEFORCE_TESTS = {
         "describe_tags",
         "describe_termination_policy_types"
     ],
+    "b2bi": [
+        "list_capabilities",
+        "list_partnerships",
+        "list_profiles",
+        "list_transformers"
+    ],
     "backup": [
+        "describe_global_settings",
+        "describe_region_settings",
         "get_supported_resource_types",
+        "list_backup_job_summaries",
         "list_backup_jobs",
         "list_backup_plan_templates",
         "list_backup_plans",
         "list_backup_vaults",
+        "list_copy_job_summaries",
+        "list_copy_jobs",
+        "list_frameworks",
+        "list_indexed_recovery_points",
+        "list_legal_holds",
         "list_protected_resources",
-        "list_restore_jobs"
+        "list_report_jobs",
+        "list_report_plans",
+        "list_restore_job_summaries",
+        "list_restore_jobs",
+        "list_restore_testing_plans",
+        "list_scan_job_summaries",
+        "list_scan_jobs",
+        "list_tiering_configurations"
+    ],
+    "backup-gateway": [
+        "list_gateways",
+        "list_hypervisors",
+        "list_virtual_machines"
+    ],
+    "backupsearch": [
+        "list_search_jobs",
+        "list_search_result_export_jobs"
     ],
     "batch": [
         "describe_compute_environments",
         "describe_job_definitions",
         "describe_job_queues",
-        "list_jobs"
+        "describe_service_environments",
+        "list_consumable_resources",
+        "list_jobs",
+        "list_scheduling_policies",
+        "list_service_jobs"
+    ],
+    "bcm-dashboards": [
+        "list_dashboards",
+        "list_scheduled_reports"
+    ],
+    "bcm-data-exports": [
+        "list_exports",
+        "list_tables"
+    ],
+    "bcm-pricing-calculator": [
+        "get_preferences",
+        "list_bill_estimates",
+        "list_bill_scenarios",
+        "list_workload_estimates"
+    ],
+    "bcm-recommended-actions": [
+        "list_recommended_actions"
+    ],
+    "bedrock": [
+        "get_account_data_retention",
+        "get_model_invocation_logging_configuration",
+        "get_use_case_for_model_access",
+        "list_advanced_prompt_optimization_jobs",
+        "list_automated_reasoning_policies",
+        "list_custom_model_deployments",
+        "list_custom_models",
+        "list_enforced_guardrails_configuration",
+        "list_evaluation_jobs",
+        "list_foundation_models",
+        "list_guardrails",
+        "list_imported_models",
+        "list_inference_profiles",
+        "list_marketplace_model_endpoints",
+        "list_model_copy_jobs",
+        "list_model_customization_jobs",
+        "list_model_import_jobs",
+        "list_model_invocation_jobs",
+        "list_prompt_routers",
+        "list_provisioned_model_throughputs"
+    ],
+    "bedrock-agent": [
+        "list_agents",
+        "list_flows",
+        "list_knowledge_bases",
+        "list_prompts"
+    ],
+    "bedrock-agent-runtime": [
+        "list_sessions"
+    ],
+    "bedrock-agentcore": [
+        "list_ab_tests",
+        "list_batch_evaluations",
+        "list_recommendations"
+    ],
+    "bedrock-agentcore-control": [
+        "get_token_vault",
+        "list_agent_runtimes",
+        "list_api_key_credential_providers",
+        "list_browser_profiles",
+        "list_browsers",
+        "list_code_interpreters",
+        "list_configuration_bundles",
+        "list_datasets",
+        "list_evaluators",
+        "list_gateways",
+        "list_harnesses",
+        "list_memories",
+        "list_oauth2_credential_providers",
+        "list_online_evaluation_configs",
+        "list_payment_credential_providers",
+        "list_payment_managers",
+        "list_policy_engine_summaries",
+        "list_policy_engines",
+        "list_registries",
+        "list_workload_identities"
+    ],
+    "bedrock-data-automation": [
+        "list_blueprints",
+        "list_data_automation_libraries",
+        "list_data_automation_projects"
+    ],
+    "bedrock-runtime": [
+        "list_async_invokes"
+    ],
+    "billing": [
+        "list_billing_views"
+    ],
+    "billingconductor": [
+        "list_account_associations",
+        "list_billing_group_cost_reports",
+        "list_billing_groups",
+        "list_custom_line_items",
+        "list_pricing_plans",
+        "list_pricing_rules"
+    ],
+    "ce": [
+        "get_anomaly_monitors",
+        "get_anomaly_subscriptions",
+        "list_commitment_purchase_analyses",
+        "list_cost_allocation_tag_backfill_history",
+        "list_cost_allocation_tags",
+        "list_cost_category_definitions",
+        "list_cost_category_resource_associations",
+        "list_savings_plans_purchase_recommendation_generation"
+    ],
+    "chatbot": [
+        "describe_chime_webhook_configurations",
+        "describe_slack_channel_configurations",
+        "describe_slack_user_identities",
+        "describe_slack_workspaces",
+        "get_account_preferences",
+        "list_custom_actions",
+        "list_microsoft_teams_channel_configurations",
+        "list_microsoft_teams_configured_teams",
+        "list_microsoft_teams_user_identities"
     ],
     "chime": [
-        "list_accounts"
+        "get_global_settings",
+        "get_phone_number_settings",
+        "list_accounts",
+        "list_phone_number_orders",
+        "list_phone_numbers"
+    ],
+    "chime-sdk-identity": [
+        "list_app_instances"
+    ],
+    "chime-sdk-media-pipelines": [
+        "list_media_capture_pipelines",
+        "list_media_insights_pipeline_configurations",
+        "list_media_pipeline_kinesis_video_stream_pools",
+        "list_media_pipelines"
+    ],
+    "chime-sdk-messaging": [
+        "get_messaging_session_endpoint"
+    ],
+    "chime-sdk-voice": [
+        "get_global_settings",
+        "get_phone_number_settings",
+        "list_available_voice_connector_regions",
+        "list_phone_number_orders",
+        "list_phone_numbers",
+        "list_sip_media_applications",
+        "list_sip_rules",
+        "list_voice_connector_groups",
+        "list_voice_connectors",
+        "list_voice_profile_domains"
+    ],
+    "cleanrooms": [
+        "list_collaborations",
+        "list_configured_tables",
+        "list_memberships"
+    ],
+    "cleanroomsml": [
+        "list_audience_export_jobs",
+        "list_audience_generation_jobs",
+        "list_audience_models",
+        "list_configured_audience_models",
+        "list_configured_model_algorithms",
+        "list_training_datasets"
     ],
     "cloud9": [
         "describe_environment_memberships",
         "list_environments"
     ],
+    "cloudcontrol": [
+        "list_resource_requests"
+    ],
     "clouddirectory": [
-        "list_development_schema_arns",
-        "list_directories",
-        "list_published_schema_arns",
         "list_development_schema_arns",
         "list_directories",
         "list_managed_schema_arns",
@@ -97,36 +386,48 @@ BRUTEFORCE_TESTS = {
     ],
     "cloudformation": [
         "describe_account_limits",
-        "describe_stack_events",
+        "describe_organizations_access",
+        "describe_publisher",
         "describe_stack_resources",
+        "describe_type",
+        "get_hook_result",
         "get_template",
         "get_template_summary",
         "list_exports",
+        "list_generated_templates",
+        "list_hook_results",
+        "list_resource_scans",
+        "list_stack_refactors",
         "list_stack_sets",
-        "list_stacks"
+        "list_stacks",
+        "list_type_registrations",
+        "list_type_versions",
+        "list_types"
     ],
     "cloudfront": [
+        "get_realtime_log_config",
+        "list_anycast_ip_lists",
+        "list_cache_policies",
         "list_cloud_front_origin_access_identities",
+        "list_connection_functions",
+        "list_connection_groups",
+        "list_continuous_deployment_policies",
+        "list_distribution_tenants",
+        "list_distribution_tenants_by_customization",
         "list_distributions",
+        "list_distributions_by_realtime_log_config",
         "list_field_level_encryption_configs",
         "list_field_level_encryption_profiles",
+        "list_functions",
+        "list_key_groups",
+        "list_key_value_stores",
+        "list_origin_access_controls",
+        "list_origin_request_policies",
+        "list_realtime_log_configs",
+        "list_response_headers_policies",
         "list_streaming_distributions",
-        "list_cloud_front_origin_access_identities",
-        "list_distributions",
-        "list_streaming_distributions",
-        "list_cloud_front_origin_access_identities",
-        "list_distributions",
-        "list_field_level_encryption_configs",
-        "list_field_level_encryption_profiles",
-        "list_streaming_distributions",
-        "list_cloud_front_origin_access_identities",
-        "list_distributions",
-        "list_field_level_encryption_configs",
-        "list_field_level_encryption_profiles",
-        "list_streaming_distributions",
-        "list_cloud_front_origin_access_identities",
-        "list_distributions",
-        "list_streaming_distributions"
+        "list_trust_stores",
+        "list_vpc_origins"
     ],
     "cloudhsm": [
         "describe_hsm",
@@ -138,57 +439,152 @@ BRUTEFORCE_TESTS = {
     ],
     "cloudhsmv2": [
         "describe_backups",
-        "describe_clusters"
+        "describe_clusters",
+        "get_resource_policy"
     ],
     "cloudsearch": [
         "describe_domains",
-        "list_domain_names",
-        "describe_domains"
+        "list_domain_names"
     ],
     "cloudtrail": [
-        "describe_trails"
+        "describe_query",
+        "describe_trails",
+        "get_event_configuration",
+        "get_insight_selectors",
+        "list_channels",
+        "list_dashboards",
+        "list_event_data_stores",
+        "list_imports",
+        "list_trails"
+    ],
+    "cloudwatch": [
+        "describe_alarm_history",
+        "describe_alarms",
+        "describe_anomaly_detectors",
+        "describe_insight_rules",
+        "get_otel_enrichment",
+        "list_alarm_mute_rules",
+        "list_dashboards",
+        "list_metric_streams",
+        "list_metrics"
+    ],
+    "codeartifact": [
+        "list_domains",
+        "list_repositories"
     ],
     "codebuild": [
+        "list_build_batches",
+        "list_build_batches_for_project",
         "list_builds",
         "list_curated_environment_images",
+        "list_fleets",
         "list_projects",
+        "list_report_groups",
+        "list_reports",
+        "list_sandboxes",
+        "list_shared_projects",
+        "list_shared_report_groups",
         "list_source_credentials"
+    ],
+    "codecatalyst": [
+        "get_user_details",
+        "list_access_tokens",
+        "list_spaces"
     ],
     "codecommit": [
         "get_branch",
+        "list_approval_rule_templates",
         "list_repositories"
     ],
+    "codeconnections": [
+        "list_connections",
+        "list_hosts",
+        "list_repository_links"
+    ],
     "codedeploy": [
-        "batch_get_deployment_targets",
-        "get_deployment_target",
         "list_applications",
         "list_deployment_configs",
-        "list_deployment_targets",
         "list_deployments",
         "list_git_hub_account_token_names",
         "list_on_premises_instances"
     ],
+    "codeguru-reviewer": [
+        "list_repository_associations"
+    ],
+    "codeguru-security": [
+        "get_account_configuration",
+        "list_scans"
+    ],
+    "codeguruprofiler": [
+        "get_findings_report_account_summary",
+        "list_profiling_groups"
+    ],
     "codepipeline": [
         "list_action_types",
         "list_pipelines",
+        "list_rule_types",
         "list_webhooks"
     ],
-    "codestar": [
-        "list_projects",
-        "list_user_profiles"
+    "codestar-connections": [
+        "list_connections",
+        "list_hosts",
+        "list_repository_links"
+    ],
+    "codestar-notifications": [
+        "list_event_types",
+        "list_notification_rules",
+        "list_targets"
     ],
     "cognito-sync": [
         "list_identity_pool_usage"
     ],
     "comprehend": [
+        "list_datasets",
         "list_document_classification_jobs",
+        "list_document_classifier_summaries",
         "list_document_classifiers",
         "list_dominant_language_detection_jobs",
+        "list_endpoints",
         "list_entities_detection_jobs",
+        "list_entity_recognizer_summaries",
         "list_entity_recognizers",
+        "list_events_detection_jobs",
+        "list_flywheels",
         "list_key_phrases_detection_jobs",
+        "list_pii_entities_detection_jobs",
         "list_sentiment_detection_jobs",
+        "list_targeted_sentiment_detection_jobs",
         "list_topics_detection_jobs"
+    ],
+    "comprehendmedical": [
+        "list_entities_detection_v2_jobs",
+        "list_icd10_cm_inference_jobs",
+        "list_phi_detection_jobs",
+        "list_rx_norm_inference_jobs",
+        "list_snomedct_inference_jobs"
+    ],
+    "compute-optimizer": [
+        "describe_recommendation_export_jobs",
+        "get_auto_scaling_group_recommendations",
+        "get_ebs_volume_recommendations",
+        "get_ec2_instance_recommendations",
+        "get_ecs_service_recommendations",
+        "get_enrollment_status",
+        "get_enrollment_statuses_for_organization",
+        "get_idle_recommendations",
+        "get_lambda_function_recommendations",
+        "get_license_recommendations",
+        "get_rds_database_recommendations",
+        "get_recommendation_summaries"
+    ],
+    "compute-optimizer-automation": [
+        "get_enrollment_configuration",
+        "list_accounts",
+        "list_automation_event_summaries",
+        "list_automation_events",
+        "list_automation_rules",
+        "list_recommended_action_summaries",
+        "list_recommended_actions"
     ],
     "config": [
         "describe_aggregation_authorizations",
@@ -199,19 +595,85 @@ BRUTEFORCE_TESTS = {
         "describe_configuration_aggregators",
         "describe_configuration_recorder_status",
         "describe_configuration_recorders",
+        "describe_conformance_pack_status",
+        "describe_conformance_packs",
         "describe_delivery_channel_status",
         "describe_delivery_channels",
+        "describe_organization_config_rule_statuses",
+        "describe_organization_config_rules",
+        "describe_organization_conformance_pack_statuses",
+        "describe_organization_conformance_packs",
         "describe_pending_aggregation_requests",
         "describe_retention_configurations",
+        "get_compliance_details_by_resource",
         "get_compliance_summary_by_config_rule",
         "get_compliance_summary_by_resource_type",
-        "get_discovered_resource_counts"
+        "get_custom_rule_policy",
+        "get_discovered_resource_counts",
+        "list_configuration_recorders",
+        "list_conformance_pack_compliance_scores",
+        "list_resource_evaluations",
+        "list_stored_queries"
+    ],
+    "connect": [
+        "list_instances",
+        "list_phone_numbers_v2",
+        "list_traffic_distribution_groups"
+    ],
+    "connectcampaigns": [
+        "list_campaigns"
+    ],
+    "connectcampaignsv2": [
+        "list_campaigns"
+    ],
+    "connectcases": [
+        "list_domains"
+    ],
+    "connecthealth": [
+        "list_domains"
+    ],
+    "controlcatalog": [
+        "list_common_controls",
+        "list_control_mappings",
+        "list_controls",
+        "list_domains",
+        "list_objectives"
+    ],
+    "controltower": [
+        "list_baselines",
+        "list_control_operations",
+        "list_enabled_baselines",
+        "list_enabled_controls",
+        "list_landing_zone_operations",
+        "list_landing_zones"
+    ],
+    "cost-optimization-hub": [
+        "get_preferences",
+        "list_enrollment_statuses",
+        "list_recommendations"
     ],
     "cur": [
         "describe_report_definitions"
     ],
-    "data.mediastore": [
-        "list_items"
+    "customer-profiles": [
+        "list_domains",
+        "list_profile_object_type_templates",
+        "list_recommender_recipes"
+    ],
+    "databrew": [
+        "list_datasets",
+        "list_jobs",
+        "list_projects",
+        "list_recipes",
+        "list_rulesets",
+        "list_schedules"
+    ],
+    "dataexchange": [
+        "list_data_grants",
+        "list_data_sets",
+        "list_event_actions",
+        "list_jobs",
+        "list_received_data_grants"
     ],
     "datapipeline": [
         "list_pipelines"
@@ -222,15 +684,30 @@ BRUTEFORCE_TESTS = {
         "list_task_executions",
         "list_tasks"
     ],
+    "datazone": [
+        "list_domains"
+    ],
     "dax": [
         "describe_clusters",
         "describe_default_parameters",
         "describe_parameter_groups",
         "describe_subnet_groups"
     ],
+    "deadline": [
+        "list_available_metered_products",
+        "list_farms",
+        "list_license_endpoints",
+        "list_monitors"
+    ],
+    "detective": [
+        "list_graphs",
+        "list_invitations",
+        "list_organization_admin_accounts"
+    ],
     "devicefarm": [
         "get_account_settings",
         "get_offering_status",
+        "get_test_grid_session",
         "list_device_instances",
         "list_devices",
         "list_instance_profiles",
@@ -238,13 +715,30 @@ BRUTEFORCE_TESTS = {
         "list_offering_transactions",
         "list_offerings",
         "list_projects",
+        "list_test_grid_projects",
         "list_vpce_configurations"
     ],
-    "devices.iot1click": [
-        "list_devices"
+    "devops-agent": [
+        "get_account_usage",
+        "list_agent_spaces",
+        "list_asset_types",
+        "list_private_connections",
+        "list_services"
+    ],
+    "devops-guru": [
+        "describe_account_health",
+        "describe_event_sources_config",
+        "describe_feedback",
+        "describe_organization_health",
+        "describe_service_integration",
+        "get_cost_estimation",
+        "list_monitored_resources",
+        "list_notification_channels"
     ],
     "directconnect": [
         "describe_connections",
+        "describe_customer_metadata",
+        "describe_direct_connect_gateway_association_proposals",
         "describe_direct_connect_gateway_associations",
         "describe_direct_connect_gateway_attachments",
         "describe_direct_connect_gateways",
@@ -252,7 +746,8 @@ BRUTEFORCE_TESTS = {
         "describe_lags",
         "describe_locations",
         "describe_virtual_gateways",
-        "describe_virtual_interfaces"
+        "describe_virtual_interfaces",
+        "list_virtual_interface_test_history"
     ],
     "discovery": [
         "describe_agents",
@@ -260,6 +755,7 @@ BRUTEFORCE_TESTS = {
         "describe_export_configurations",
         "describe_export_tasks",
         "describe_import_tasks",
+        "describe_tags",
         "get_discovery_summary"
     ],
     "dlm": [
@@ -267,17 +763,63 @@ BRUTEFORCE_TESTS = {
     ],
     "dms": [
         "describe_account_attributes",
+        "describe_applicable_individual_assessments",
         "describe_certificates",
         "describe_connections",
+        "describe_data_migrations",
+        "describe_data_providers",
         "describe_endpoint_types",
         "describe_endpoints",
+        "describe_engine_versions",
         "describe_event_categories",
         "describe_event_subscriptions",
+        "describe_fleet_advisor_collectors",
+        "describe_fleet_advisor_databases",
+        "describe_fleet_advisor_lsa_analysis",
+        "describe_fleet_advisor_schema_object_summary",
+        "describe_fleet_advisor_schemas",
+        "describe_instance_profiles",
+        "describe_migration_projects",
         "describe_orderable_replication_instances",
+        "describe_pending_maintenance_actions",
+        "describe_recommendation_limitations",
+        "describe_recommendations",
+        "describe_replication_configs",
         "describe_replication_instances",
         "describe_replication_subnet_groups",
         "describe_replication_task_assessment_results",
-        "describe_replication_tasks"
+        "describe_replication_task_assessment_runs",
+        "describe_replication_task_individual_assessments",
+        "describe_replication_tasks",
+        "describe_replications",
+        "list_tags_for_resource"
+    ],
+    "docdb": [
+        "describe_certificates",
+        "describe_db_cluster_parameter_groups",
+        "describe_db_cluster_snapshots",
+        "describe_db_clusters",
+        "describe_db_engine_versions",
+        "describe_db_instances",
+        "describe_db_subnet_groups",
+        "describe_event_categories",
+        "describe_event_subscriptions",
+        "describe_global_clusters",
+        "describe_pending_maintenance_actions"
+    ],
+    "docdb-elastic": [
+        "list_cluster_snapshots",
+        "list_clusters",
+        "list_pending_maintenance_actions"
+    ],
+    "drs": [
+        "describe_jobs",
+        "describe_launch_configuration_templates",
+        "describe_recovery_instances",
+        "describe_replication_configuration_templates",
+        "describe_source_networks",
+        "describe_source_servers",
+        "list_staging_accounts"
     ],
     "ds": [
         "describe_directories",
@@ -285,31 +827,57 @@ BRUTEFORCE_TESTS = {
         "describe_snapshots",
         "describe_trusts",
         "get_directory_limits",
+        "list_ad_assessments",
         "list_log_subscriptions"
+    ],
+    "dsql": [
+        "list_clusters"
     ],
     "dynamodb": [
         "describe_endpoints",
         "describe_limits",
         "list_backups",
+        "list_contributor_insights",
+        "list_exports",
         "list_global_tables",
-        "list_tables",
+        "list_imports",
         "list_tables"
+    ],
+    "dynamodbstreams": [
+        "list_streams"
     ],
     "ec2": [
         "describe_account_attributes",
+        "describe_account_vpc_encryption_control",
+        "describe_address_transfers",
         "describe_addresses",
+        "describe_addresses_attribute",
         "describe_aggregate_id_format",
         "describe_availability_zones",
+        "describe_aws_network_performance_metric_subscriptions",
         "describe_bundle_tasks",
+        "describe_capacity_block_extension_history",
+        "describe_capacity_block_status",
+        "describe_capacity_blocks",
+        "describe_capacity_manager_data_exports",
+        "describe_capacity_reservation_cancellation_quotes",
+        "describe_capacity_reservation_fleets",
+        "describe_capacity_reservation_topology",
         "describe_capacity_reservations",
+        "describe_carrier_gateways",
         "describe_classic_link_instances",
         "describe_client_vpn_endpoints",
+        "describe_coip_pools",
         "describe_conversion_tasks",
         "describe_customer_gateways",
+        "describe_declarative_policies_reports",
         "describe_dhcp_options",
         "describe_egress_only_internet_gateways",
         "describe_elastic_gpus",
+        "describe_export_image_tasks",
         "describe_export_tasks",
+        "describe_fast_launch_images",
+        "describe_fast_snapshot_restores",
         "describe_fleets",
         "describe_flow_logs",
         "describe_fpga_images",
@@ -318,49 +886,120 @@ BRUTEFORCE_TESTS = {
         "describe_hosts",
         "describe_iam_instance_profile_associations",
         "describe_id_format",
+        "describe_image_usage_report_entries",
+        "describe_image_usage_reports",
         "describe_images",
         "describe_import_image_tasks",
         "describe_import_snapshot_tasks",
+        "describe_instance_connect_endpoints",
         "describe_instance_credit_specifications",
+        "describe_instance_event_notification_attributes",
+        "describe_instance_event_windows",
+        "describe_instance_image_metadata",
+        "describe_instance_sql_ha_history_states",
+        "describe_instance_sql_ha_states",
         "describe_instance_status",
+        "describe_instance_topology",
+        "describe_instance_type_offerings",
+        "describe_instance_types",
         "describe_instances",
         "describe_internet_gateways",
+        "describe_ipam_byoasn",
+        "describe_ipam_external_resource_verification_tokens",
+        "describe_ipam_policies",
+        "describe_ipam_pool_allocations",
+        "describe_ipam_pools",
+        "describe_ipam_prefix_list_resolver_targets",
+        "describe_ipam_prefix_list_resolvers",
+        "describe_ipam_resource_discoveries",
+        "describe_ipam_resource_discovery_associations",
+        "describe_ipam_scopes",
+        "describe_ipams",
+        "describe_ipv6_pools",
         "describe_key_pairs",
         "describe_launch_template_versions",
         "describe_launch_templates",
+        "describe_local_gateway_route_table_virtual_interface_group_associations",
+        "describe_local_gateway_route_table_vpc_associations",
+        "describe_local_gateway_route_tables",
+        "describe_local_gateway_virtual_interface_groups",
+        "describe_local_gateway_virtual_interfaces",
+        "describe_local_gateways",
+        "describe_locked_snapshots",
+        "describe_mac_hosts",
+        "describe_mac_modification_tasks",
+        "describe_managed_prefix_lists",
         "describe_moving_addresses",
         "describe_nat_gateways",
         "describe_network_acls",
+        "describe_network_insights_access_scope_analyses",
+        "describe_network_insights_access_scopes",
+        "describe_network_insights_analyses",
+        "describe_network_insights_paths",
         "describe_network_interface_permissions",
         "describe_network_interfaces",
+        "describe_outpost_lags",
         "describe_placement_groups",
         "describe_prefix_lists",
         "describe_principal_id_format",
         "describe_public_ipv4_pools",
         "describe_regions",
+        "describe_replace_root_volume_tasks",
         "describe_reserved_instances",
         "describe_reserved_instances_listings",
         "describe_reserved_instances_modifications",
         "describe_reserved_instances_offerings",
+        "describe_route_server_endpoints",
+        "describe_route_server_peers",
+        "describe_route_servers",
         "describe_route_tables",
         "describe_scheduled_instances",
+        "describe_secondary_interfaces",
+        "describe_secondary_networks",
+        "describe_secondary_subnets",
+        "describe_security_group_rules",
+        "describe_security_group_vpc_associations",
         "describe_security_groups",
+        "describe_service_link_virtual_interfaces",
+        "describe_snapshot_tier_status",
         "describe_snapshots",
         "describe_spot_datafeed_subscription",
         "describe_spot_fleet_requests",
         "describe_spot_instance_requests",
         "describe_spot_price_history",
+        "describe_store_image_tasks",
         "describe_subnets",
         "describe_tags",
+        "describe_traffic_mirror_filter_rules",
+        "describe_traffic_mirror_filters",
+        "describe_traffic_mirror_sessions",
+        "describe_traffic_mirror_targets",
         "describe_transit_gateway_attachments",
+        "describe_transit_gateway_connect_peers",
+        "describe_transit_gateway_connects",
+        "describe_transit_gateway_metering_policies",
+        "describe_transit_gateway_multicast_domains",
+        "describe_transit_gateway_peering_attachments",
+        "describe_transit_gateway_policy_tables",
+        "describe_transit_gateway_route_table_announcements",
         "describe_transit_gateway_route_tables",
         "describe_transit_gateway_vpc_attachments",
         "describe_transit_gateways",
+        "describe_trunk_interface_associations",
+        "describe_verified_access_endpoints",
+        "describe_verified_access_groups",
+        "describe_verified_access_instance_logging_configurations",
+        "describe_verified_access_instances",
+        "describe_verified_access_trust_providers",
         "describe_volume_status",
         "describe_volumes",
         "describe_volumes_modifications",
+        "describe_vpc_block_public_access_exclusions",
+        "describe_vpc_block_public_access_options",
         "describe_vpc_classic_link",
         "describe_vpc_classic_link_dns_support",
+        "describe_vpc_encryption_controls",
+        "describe_vpc_endpoint_associations",
         "describe_vpc_endpoint_connection_notifications",
         "describe_vpc_endpoint_connections",
         "describe_vpc_endpoint_service_configurations",
@@ -368,25 +1007,69 @@ BRUTEFORCE_TESTS = {
         "describe_vpc_endpoints",
         "describe_vpc_peering_connections",
         "describe_vpcs",
+        "describe_vpn_concentrators",
         "describe_vpn_connections",
-        "describe_vpn_gateways"
+        "describe_vpn_gateways",
+        "get_allowed_images_settings",
+        "get_aws_network_performance_data",
+        "get_capacity_manager_attributes",
+        "get_capacity_manager_monitored_tag_keys",
+        "get_ebs_default_kms_key_id",
+        "get_ebs_encryption_by_default",
+        "get_enabled_ipam_policy",
+        "get_image_block_public_access_state",
+        "get_instance_metadata_defaults",
+        "get_managed_resource_visibility",
+        "get_serial_console_access_status",
+        "get_snapshot_block_public_access_state",
+        "get_vpn_connection_device_types",
+        "list_images_in_recycle_bin",
+        "list_snapshots_in_recycle_bin",
+        "list_volumes_in_recycle_bin"
     ],
     "ecr": [
+        "describe_pull_through_cache_rules",
+        "describe_registry",
         "describe_repositories",
-        "get_authorization_token"
+        "describe_repository_creation_templates",
+        "get_authorization_token",
+        "get_registry_policy",
+        "get_registry_scanning_configuration",
+        "get_signing_configuration",
+        "list_pull_time_update_exclusions"
+    ],
+    "ecr-public": [
+        "describe_registries",
+        "describe_repositories",
+        "get_authorization_token",
+        "get_registry_catalog_data"
     ],
     "ecs": [
+        "describe_capacity_providers",
         "describe_clusters",
         "list_account_settings",
         "list_clusters",
         "list_container_instances",
+        "list_daemon_task_definitions",
+        "list_daemons",
         "list_services",
         "list_task_definition_families",
         "list_task_definitions",
         "list_tasks"
     ],
+    "efs": [
+        "describe_access_points",
+        "describe_account_preferences",
+        "describe_file_systems",
+        "describe_mount_targets",
+        "describe_replication_configurations"
+    ],
     "eks": [
-        "list_clusters"
+        "describe_addon_versions",
+        "describe_cluster_versions",
+        "list_access_policies",
+        "list_clusters",
+        "list_eks_anywhere_subscriptions"
     ],
     "elasticache": [
         "describe_cache_clusters",
@@ -394,10 +1077,17 @@ BRUTEFORCE_TESTS = {
         "describe_cache_parameter_groups",
         "describe_cache_security_groups",
         "describe_cache_subnet_groups",
+        "describe_global_replication_groups",
         "describe_replication_groups",
         "describe_reserved_cache_nodes",
         "describe_reserved_cache_nodes_offerings",
+        "describe_serverless_cache_snapshots",
+        "describe_serverless_caches",
+        "describe_service_updates",
         "describe_snapshots",
+        "describe_update_actions",
+        "describe_user_groups",
+        "describe_users",
         "list_allowed_node_type_modifications"
     ],
     "elasticbeanstalk": [
@@ -408,76 +1098,152 @@ BRUTEFORCE_TESTS = {
         "describe_environment_managed_actions",
         "describe_environment_resources",
         "describe_instances_health",
-        "describe_platform_version"
+        "describe_platform_version",
+        "list_platform_branches"
     ],
-    "elasticfilesystem": [
-        "describe_file_systems",
-        "describe_mount_targets"
-    ],
-    "elasticloadbalancing": [
+    "elb": [
         "describe_account_limits",
         "describe_load_balancer_policies",
         "describe_load_balancer_policy_types",
-        "describe_load_balancers",
+        "describe_load_balancers"
+    ],
+    "elbv2": [
         "describe_account_limits",
         "describe_listeners",
         "describe_load_balancers",
         "describe_rules",
         "describe_ssl_policies",
-        "describe_target_groups"
+        "describe_target_groups",
+        "describe_trust_stores"
     ],
-    "elasticmapreduce": [
+    "elementalinference": [
+        "list_dictionaries",
+        "list_feeds"
+    ],
+    "emr": [
         "describe_job_flows",
+        "describe_release_label",
+        "get_block_public_access_configuration",
         "list_clusters",
-        "list_security_configurations"
+        "list_notebook_executions",
+        "list_release_labels",
+        "list_security_configurations",
+        "list_studio_session_mappings",
+        "list_studios"
     ],
-    "elastictranscoder": [
-        "list_pipelines",
-        "list_presets"
+    "emr-containers": [
+        "list_job_templates",
+        "list_security_configurations",
+        "list_virtual_clusters"
     ],
-    "email": [
-        "get_account",
-        "get_dedicated_ips",
-        "get_deliverability_dashboard_options",
-        "list_configuration_sets",
-        "list_dedicated_ip_pools",
-        "list_deliverability_test_reports",
-        "list_email_identities",
-        "describe_active_receipt_rule_set",
-        "get_account_sending_enabled",
-        "get_send_quota",
-        "get_send_statistics",
-        "list_configuration_sets",
-        "list_custom_verification_email_templates",
-        "list_identities",
-        "list_receipt_filters",
-        "list_receipt_rule_sets",
-        "list_templates",
-        "list_verified_email_addresses"
+    "emr-serverless": [
+        "list_applications"
+    ],
+    "entityresolution": [
+        "list_id_mapping_workflows",
+        "list_id_namespaces",
+        "list_matching_workflows",
+        "list_provider_services",
+        "list_schema_mappings"
     ],
     "es": [
+        "describe_inbound_cross_cluster_search_connections",
+        "describe_outbound_cross_cluster_search_connections",
+        "describe_packages",
         "describe_reserved_elasticsearch_instance_offerings",
         "describe_reserved_elasticsearch_instances",
         "get_compatible_elasticsearch_versions",
         "list_domain_names",
-        "list_elasticsearch_versions"
+        "list_elasticsearch_versions",
+        "list_vpc_endpoints"
     ],
     "events": [
         "describe_event_bus",
+        "list_api_destinations",
+        "list_archives",
+        "list_connections",
+        "list_endpoints",
+        "list_event_buses",
+        "list_replays",
         "list_rules"
+    ],
+    "evs": [
+        "get_versions",
+        "list_environments"
+    ],
+    "finspace": [
+        "list_environments",
+        "list_kx_environments"
+    ],
+    "finspace-data": [
+        "get_working_location",
+        "list_datasets"
     ],
     "firehose": [
         "list_delivery_streams"
     ],
+    "fis": [
+        "list_actions",
+        "list_experiment_templates",
+        "list_experiments",
+        "list_target_resource_types"
+    ],
     "fms": [
         "get_admin_account",
         "get_notification_channel",
+        "list_admin_accounts_for_organization",
+        "list_admins_managing_account",
         "list_member_accounts",
-        "list_policies"
+        "list_policies",
+        "list_resource_sets"
+    ],
+    "forecast": [
+        "list_dataset_groups",
+        "list_dataset_import_jobs",
+        "list_datasets",
+        "list_explainabilities",
+        "list_explainability_exports",
+        "list_forecast_export_jobs",
+        "list_forecasts",
+        "list_monitors",
+        "list_predictor_backtest_export_jobs",
+        "list_predictors",
+        "list_what_if_analyses",
+        "list_what_if_forecast_exports",
+        "list_what_if_forecasts"
+    ],
+    "frauddetector": [
+        "describe_model_versions",
+        "get_batch_import_jobs",
+        "get_batch_prediction_jobs",
+        "get_detectors",
+        "get_entity_types",
+        "get_event_types",
+        "get_external_models",
+        "get_kms_encryption_key",
+        "get_labels",
+        "get_lists_metadata",
+        "get_models",
+        "get_outcomes",
+        "get_variables",
+        "list_event_predictions"
+    ],
+    "freetier": [
+        "get_account_plan_state",
+        "get_free_tier_usage",
+        "list_account_activities"
     ],
     "fsx": [
         "describe_backups",
-        "describe_file_systems"
+        "describe_data_repository_associations",
+        "describe_data_repository_tasks",
+        "describe_file_caches",
+        "describe_file_systems",
+        "describe_s3_access_point_attachments",
+        "describe_shared_vpc_configuration",
+        "describe_snapshots",
+        "describe_storage_virtual_machines",
+        "describe_volumes"
     ],
     "gamelift": [
         "describe_ec2_instance_limits",
@@ -494,14 +1260,31 @@ BRUTEFORCE_TESTS = {
         "describe_vpc_peering_connections",
         "list_aliases",
         "list_builds",
-        "list_fleets"
+        "list_container_fleets",
+        "list_container_group_definitions",
+        "list_fleet_deployments",
+        "list_fleets",
+        "list_game_server_groups",
+        "list_locations",
+        "list_scripts"
+    ],
+    "gameliftstreams": [
+        "list_applications",
+        "list_stream_groups",
+        "list_stream_sessions_by_account"
     ],
     "globalaccelerator": [
-        "describe_accelerator_attributes",
-        "list_accelerators"
+        "list_accelerators",
+        "list_byoip_cidrs",
+        "list_cross_account_attachments",
+        "list_cross_account_resource_accounts",
+        "list_custom_routing_accelerators"
     ],
     "glue": [
+        "describe_inbound_integrations",
+        "describe_integrations",
         "get_catalog_import_status",
+        "get_catalogs",
         "get_classifiers",
         "get_connections",
         "get_crawler_metrics",
@@ -510,14 +1293,43 @@ BRUTEFORCE_TESTS = {
         "get_databases",
         "get_dataflow_graph",
         "get_dev_endpoints",
+        "get_glue_identity_center_configuration",
         "get_jobs",
+        "get_ml_transforms",
+        "get_resource_policies",
         "get_resource_policy",
+        "get_schema_version",
         "get_security_configurations",
         "get_triggers",
+        "list_asset_types",
+        "list_blueprints",
+        "list_column_statistics_task_runs",
+        "list_connection_types",
         "list_crawlers",
+        "list_custom_entity_types",
+        "list_data_quality_results",
+        "list_data_quality_rule_recommendation_runs",
+        "list_data_quality_ruleset_evaluation_runs",
+        "list_data_quality_rulesets",
+        "list_data_quality_statistic_annotations",
+        "list_data_quality_statistics",
         "list_dev_endpoints",
+        "list_entities",
+        "list_form_types",
+        "list_glossaries",
+        "list_integration_resource_properties",
         "list_jobs",
-        "list_triggers"
+        "list_ml_transforms",
+        "list_registries",
+        "list_schemas",
+        "list_sessions",
+        "list_triggers",
+        "list_usage_profiles",
+        "list_workflows"
+    ],
+    "grafana": [
+        "list_versions",
+        "list_workspaces"
     ],
     "greengrass": [
         "get_service_role_for_account",
@@ -531,27 +1343,54 @@ BRUTEFORCE_TESTS = {
         "list_resource_definitions",
         "list_subscription_definitions"
     ],
+    "greengrassv2": [
+        "get_service_role_for_account",
+        "list_components",
+        "list_core_devices",
+        "list_deployments"
+    ],
+    "groundstation": [
+        "list_configs",
+        "list_dataflow_endpoint_groups",
+        "list_ground_stations",
+        "list_mission_profiles",
+        "list_satellites"
+    ],
     "guardduty": [
         "get_invitations_count",
+        "get_organization_statistics",
         "list_detectors",
-        "list_invitations"
+        "list_invitations",
+        "list_malware_protection_plans",
+        "list_malware_scans",
+        "list_organization_admin_accounts"
     ],
     "health": [
+        "describe_affected_entities_for_organization",
         "describe_entity_aggregates",
-        "describe_event_types"
+        "describe_event_types",
+        "describe_events_for_organization",
+        "describe_health_service_status_for_organization"
+    ],
+    "healthlake": [
+        "list_fhir_datastores"
     ],
     "iam": [
         "get_account_authorization_details",
         "get_account_password_policy",
         "get_account_summary",
         "get_credential_report",
+        "get_login_profile",
+        "get_outbound_web_identity_federation_info",
         "get_user",
         "list_access_keys",
         "list_account_aliases",
+        "list_delegation_requests",
         "list_groups",
         "list_instance_profiles",
         "list_mfa_devices",
         "list_open_id_connect_providers",
+        "list_organizations_features",
         "list_policies",
         "list_roles",
         "list_saml_providers",
@@ -561,6 +1400,23 @@ BRUTEFORCE_TESTS = {
         "list_ssh_public_keys",
         "list_users",
         "list_virtual_mfa_devices"
+    ],
+    "imagebuilder": [
+        "list_component_build_versions",
+        "list_components",
+        "list_container_recipes",
+        "list_distribution_configurations",
+        "list_image_build_versions",
+        "list_image_pipelines",
+        "list_image_recipes",
+        "list_image_scan_finding_aggregations",
+        "list_image_scan_findings",
+        "list_images",
+        "list_infrastructure_configurations",
+        "list_lifecycle_policies",
+        "list_waiting_workflow_steps",
+        "list_workflow_build_versions",
+        "list_workflows"
     ],
     "importexport": [
         "list_jobs"
@@ -574,27 +1430,75 @@ BRUTEFORCE_TESTS = {
         "list_findings",
         "list_rules_packages"
     ],
+    "inspector2": [
+        "describe_organization_configuration",
+        "get_configuration",
+        "get_delegated_admin_account",
+        "get_ec2_deep_inspection_configuration",
+        "get_findings_report_status",
+        "list_account_permissions",
+        "list_cis_scan_configurations",
+        "list_cis_scans",
+        "list_code_security_integrations",
+        "list_code_security_scan_configurations",
+        "list_coverage",
+        "list_coverage_statistics",
+        "list_delegated_admin_accounts",
+        "list_filters",
+        "list_findings",
+        "list_members",
+        "list_usage_totals"
+    ],
+    "interconnect": [
+        "list_connections",
+        "list_environments"
+    ],
+    "internetmonitor": [
+        "list_internet_events",
+        "list_monitors"
+    ],
+    "invoicing": [
+        "list_invoice_units",
+        "list_procurement_portal_preferences"
+    ],
     "iot": [
         "describe_account_audit_configuration",
         "describe_default_authorizer",
+        "describe_encryption_configuration",
         "describe_endpoint",
         "describe_event_configurations",
+        "get_behavior_model_training_summaries",
         "get_effective_policies",
         "get_indexing_configuration",
         "get_logging_options",
+        "get_package_configuration",
         "get_registration_code",
         "get_v2_logging_options",
         "list_active_violations",
         "list_audit_findings",
+        "list_audit_suppressions",
         "list_authorizers",
         "list_billing_groups",
         "list_ca_certificates",
+        "list_certificate_providers",
         "list_certificates",
+        "list_command_executions",
+        "list_commands",
+        "list_custom_metrics",
+        "list_detect_mitigation_actions_executions",
+        "list_dimensions",
+        "list_domain_configurations",
+        "list_fleet_metrics",
         "list_indices",
+        "list_job_templates",
         "list_jobs",
+        "list_managed_job_templates",
+        "list_mitigation_actions",
         "list_ota_updates",
         "list_outgoing_certificates",
+        "list_packages",
         "list_policies",
+        "list_provisioning_templates",
         "list_role_aliases",
         "list_scheduled_audits",
         "list_security_profiles",
@@ -603,62 +1507,277 @@ BRUTEFORCE_TESTS = {
         "list_thing_registration_tasks",
         "list_thing_types",
         "list_things",
+        "list_topic_rule_destinations",
         "list_topic_rules",
         "list_v2_logging_levels"
     ],
-    "iotanalytics": [
+    "iot-data": [
+        "list_retained_messages"
+    ],
+    "iot-managed-integrations": [
+        "get_custom_endpoint",
+        "get_default_encryption_configuration",
+        "get_hub_configuration",
+        "list_account_associations",
+        "list_cloud_connectors",
+        "list_connector_destinations",
+        "list_credential_lockers",
+        "list_destinations",
+        "list_device_discoveries",
+        "list_event_log_configurations",
+        "list_managed_thing_account_associations",
+        "list_managed_things",
+        "list_notification_configurations",
+        "list_ota_task_configurations",
+        "list_ota_tasks",
+        "list_provisioning_profiles"
+    ],
+    "iotdeviceadvisor": [
+        "get_endpoint",
+        "list_suite_definitions",
+        "list_suite_runs"
+    ],
+    "iotfleetwise": [
+        "get_encryption_configuration",
+        "get_logging_options",
+        "get_register_account_status",
+        "list_campaigns",
+        "list_decoder_manifests",
+        "list_fleets",
+        "list_model_manifests",
+        "list_signal_catalogs",
+        "list_state_templates",
+        "list_vehicles"
+    ],
+    "iotsecuretunneling": [
+        "list_tunnels"
+    ],
+    "iotsitewise": [
+        "describe_default_encryption_configuration",
         "describe_logging_options",
+        "describe_storage_configuration",
+        "describe_time_series",
+        "get_asset_property_value",
+        "get_asset_property_value_history",
+        "list_access_policies",
+        "list_asset_models",
+        "list_assets",
+        "list_bulk_import_jobs",
+        "list_computation_models",
+        "list_gateways",
+        "list_portals",
+        "list_time_series"
+    ],
+    "iotthingsgraph": [
+        "describe_namespace",
+        "get_namespace_deletion_status"
+    ],
+    "iottwinmaker": [
+        "get_pricing_plan",
+        "list_workspaces"
+    ],
+    "iotwireless": [
+        "get_event_configuration_by_resource_types",
+        "get_log_levels_by_resource_types",
+        "get_metric_configuration",
+        "get_metrics",
+        "get_position_estimate",
+        "get_service_endpoint",
+        "list_destinations",
+        "list_device_profiles",
+        "list_fuota_tasks",
+        "list_multicast_groups",
+        "list_network_analyzer_configurations",
+        "list_partner_accounts",
+        "list_position_configurations",
+        "list_service_profiles",
+        "list_wireless_device_import_tasks",
+        "list_wireless_devices",
+        "list_wireless_gateway_task_definitions",
+        "list_wireless_gateways"
+    ],
+    "ivs": [
+        "list_ad_configurations",
         "list_channels",
-        "list_datasets",
-        "list_datastores",
-        "list_pipelines"
-    ],
-    "kafka": [
-        "list_clusters"
-    ],
-    "kinesis": [
-        "describe_limits",
-        "describe_stream_consumer",
-        "list_shards",
+        "list_playback_key_pairs",
+        "list_playback_restriction_policies",
+        "list_recording_configurations",
         "list_streams"
     ],
+    "ivs-realtime": [
+        "list_compositions",
+        "list_encoder_configurations",
+        "list_ingest_configurations",
+        "list_stages",
+        "list_storage_configurations"
+    ],
+    "ivschat": [
+        "list_logging_configurations",
+        "list_rooms"
+    ],
+    "kafka": [
+        "get_compatible_kafka_versions",
+        "list_clusters",
+        "list_clusters_v2",
+        "list_configurations",
+        "list_kafka_versions",
+        "list_replicators",
+        "list_vpc_connections"
+    ],
+    "kafkaconnect": [
+        "list_connectors",
+        "list_custom_plugins",
+        "list_worker_configurations"
+    ],
+    "kendra": [
+        "list_indices"
+    ],
+    "kendra-ranking": [
+        "list_rescore_execution_plans"
+    ],
+    "keyspaces": [
+        "list_keyspaces"
+    ],
+    "keyspacesstreams": [
+        "list_streams"
+    ],
+    "kinesis": [
+        "describe_account_settings",
+        "describe_limits",
+        "describe_stream",
+        "describe_stream_consumer",
+        "describe_stream_summary",
+        "list_shards",
+        "list_streams",
+        "list_tags_for_stream"
+    ],
+    "kinesis-video-archived-media": [
+        "list_fragments"
+    ],
     "kinesisanalytics": [
-        "list_applications",
+        "list_applications"
+    ],
+    "kinesisanalyticsv2": [
         "list_applications"
     ],
     "kinesisvideo": [
+        "describe_edge_configuration",
+        "describe_image_generation_configuration",
+        "describe_mapped_resource_configuration",
+        "describe_media_storage_configuration",
+        "describe_notification_configuration",
+        "describe_signaling_channel",
         "describe_stream",
+        "describe_stream_storage_configuration",
+        "list_signaling_channels",
         "list_streams",
         "list_tags_for_stream"
     ],
     "kms": [
         "describe_custom_key_stores",
         "list_aliases",
-        "list_keys"
+        "list_keys",
+        "list_retirable_grants"
+    ],
+    "lakeformation": [
+        "describe_lake_formation_identity_center_configuration",
+        "get_data_lake_principal",
+        "get_data_lake_settings",
+        "get_temporary_data_location_credentials",
+        "list_data_cells_filter",
+        "list_lake_formation_opt_ins",
+        "list_lf_tag_expressions",
+        "list_lf_tags",
+        "list_permissions",
+        "list_resources",
+        "list_transactions"
     ],
     "lambda": [
-        "list_functions",
         "get_account_settings",
+        "list_capacity_providers",
+        "list_code_signing_configs",
         "list_event_source_mappings",
         "list_functions",
         "list_layers"
     ],
+    "lambda-core": [
+        "list_network_connectors"
+    ],
+    "lambda-microvms": [
+        "list_managed_microvm_images",
+        "list_microvm_images",
+        "list_microvms"
+    ],
+    "launch-wizard": [
+        "list_deployments",
+        "list_workloads"
+    ],
+    "lex-models": [
+        "get_bots",
+        "get_builtin_intents",
+        "get_builtin_slot_types",
+        "get_intents",
+        "get_migrations",
+        "get_slot_types"
+    ],
+    "lexv2-models": [
+        "list_bots",
+        "list_exports",
+        "list_imports",
+        "list_test_executions",
+        "list_test_sets"
+    ],
     "license-manager": [
         "get_service_settings",
-        "list_license_configurations"
+        "list_distributed_grants",
+        "list_license_asset_groups",
+        "list_license_asset_rulesets",
+        "list_license_configurations",
+        "list_license_configurations_for_organization",
+        "list_license_conversion_tasks",
+        "list_license_manager_report_generators",
+        "list_licenses",
+        "list_received_grants",
+        "list_received_licenses",
+        "list_received_licenses_for_organization",
+        "list_resource_inventory",
+        "list_tokens"
+    ],
+    "license-manager-linux-subscriptions": [
+        "get_service_settings",
+        "list_linux_subscription_instances",
+        "list_linux_subscriptions",
+        "list_registered_subscription_providers"
+    ],
+    "license-manager-user-subscriptions": [
+        "list_identity_providers",
+        "list_instances",
+        "list_license_server_endpoints"
     ],
     "lightsail": [
         "get_active_names",
+        "get_alarms",
         "get_blueprints",
+        "get_bucket_bundles",
+        "get_buckets",
         "get_bundles",
+        "get_certificates",
         "get_cloud_formation_stack_records",
+        "get_contact_methods",
+        "get_container_api_metadata",
+        "get_container_service_powers",
+        "get_container_services",
         "get_disk_snapshots",
         "get_disks",
+        "get_distribution_bundles",
+        "get_distribution_latest_cache_reset",
+        "get_distributions",
         "get_domains",
         "get_export_snapshot_records",
         "get_instance_snapshots",
         "get_instances",
         "get_key_pairs",
+        "get_load_balancer_tls_policies",
         "get_load_balancers",
         "get_operations",
         "get_regions",
@@ -668,13 +1787,51 @@ BRUTEFORCE_TESTS = {
         "get_relational_databases",
         "get_static_ips"
     ],
+    "location": [
+        "list_geofence_collections",
+        "list_jobs",
+        "list_keys",
+        "list_maps",
+        "list_place_indexes",
+        "list_route_calculators",
+        "list_trackers"
+    ],
     "logs": [
+        "describe_configuration_templates",
+        "describe_deliveries",
+        "describe_delivery_destinations",
+        "describe_delivery_sources",
         "describe_destinations",
         "describe_export_tasks",
+        "describe_import_tasks",
         "describe_log_groups",
+        "describe_log_streams",
+        "describe_lookup_tables",
         "describe_metric_filters",
         "describe_queries",
-        "describe_resource_policies"
+        "describe_query_definitions",
+        "describe_resource_policies",
+        "get_log_group_fields",
+        "list_anomalies",
+        "list_integrations",
+        "list_log_anomaly_detectors",
+        "list_log_groups",
+        "list_scheduled_queries",
+        "list_syslog_configurations"
+    ],
+    "lookoutequipment": [
+        "list_data_ingestion_jobs",
+        "list_datasets",
+        "list_inference_schedulers",
+        "list_label_groups",
+        "list_models",
+        "list_retraining_schedulers"
+    ],
+    "m2": [
+        "get_signed_bluinsights_url",
+        "list_applications",
+        "list_engine_versions",
+        "list_environments"
     ],
     "machinelearning": [
         "describe_batch_predictions",
@@ -682,104 +1839,460 @@ BRUTEFORCE_TESTS = {
         "describe_evaluations",
         "describe_ml_models"
     ],
-    "macie": [
-        "list_member_accounts",
-        "list_s3_resources"
+    "macie2": [
+        "describe_buckets",
+        "describe_organization_configuration",
+        "get_administrator_account",
+        "get_automated_discovery_configuration",
+        "get_bucket_statistics",
+        "get_classification_export_configuration",
+        "get_findings_publication_configuration",
+        "get_invitations_count",
+        "get_macie_session",
+        "get_master_account",
+        "get_reveal_configuration",
+        "get_usage_statistics",
+        "get_usage_totals",
+        "list_allow_lists",
+        "list_automated_discovery_accounts",
+        "list_classification_jobs",
+        "list_classification_scopes",
+        "list_custom_data_identifiers",
+        "list_findings",
+        "list_findings_filters",
+        "list_invitations",
+        "list_managed_data_identifiers",
+        "list_members",
+        "list_organization_admin_accounts",
+        "list_sensitivity_inspection_templates"
+    ],
+    "mailmanager": [
+        "list_addon_instances",
+        "list_addon_subscriptions",
+        "list_address_lists",
+        "list_archives",
+        "list_ingress_points",
+        "list_relays",
+        "list_rule_sets",
+        "list_traffic_policies"
+    ],
+    "managedblockchain": [
+        "list_accessors",
+        "list_invitations",
+        "list_networks"
+    ],
+    "marketplace-agreement": [
+        "list_agreement_charges",
+        "list_billing_adjustment_requests"
+    ],
+    "marketplace-discovery": [
+        "list_purchase_options"
     ],
     "mediaconnect": [
+        "list_bridges",
         "list_entitlements",
-        "list_flows"
+        "list_flows",
+        "list_gateway_instances",
+        "list_gateways",
+        "list_offerings",
+        "list_reservations",
+        "list_router_inputs",
+        "list_router_network_interfaces",
+        "list_router_outputs"
     ],
     "mediaconvert": [
         "describe_endpoints",
+        "get_policy",
         "list_job_templates",
         "list_jobs",
         "list_presets",
-        "list_queues"
+        "list_queues",
+        "list_versions"
     ],
     "medialive": [
+        "describe_account_configuration",
         "list_channels",
+        "list_cloud_watch_alarm_template_groups",
+        "list_cloud_watch_alarm_templates",
+        "list_clusters",
+        "list_event_bridge_rule_template_groups",
+        "list_event_bridge_rule_templates",
+        "list_input_devices",
         "list_input_security_groups",
         "list_inputs",
+        "list_multiplexes",
+        "list_networks",
         "list_offerings",
-        "list_reservations"
+        "list_reservations",
+        "list_sdi_sources",
+        "list_signal_maps",
+        "list_versions"
     ],
     "mediapackage": [
         "list_channels",
+        "list_harvest_jobs",
         "list_origin_endpoints"
+    ],
+    "mediapackage-vod": [
+        "list_assets",
+        "list_packaging_configurations",
+        "list_packaging_groups"
+    ],
+    "mediapackagev2": [
+        "list_channel_groups"
     ],
     "mediastore": [
         "describe_container",
         "list_containers"
     ],
+    "mediastore-data": [
+        "list_items"
+    ],
     "mediatailor": [
-        "list_playback_configurations"
+        "list_channels",
+        "list_functions",
+        "list_playback_configurations",
+        "list_source_locations"
+    ],
+    "medical-imaging": [
+        "list_datastores"
+    ],
+    "memorydb": [
+        "describe_acls",
+        "describe_clusters",
+        "describe_engine_versions",
+        "describe_multi_region_clusters",
+        "describe_multi_region_parameter_groups",
+        "describe_parameter_groups",
+        "describe_reserved_nodes",
+        "describe_reserved_nodes_offerings",
+        "describe_service_updates",
+        "describe_snapshots",
+        "describe_subnet_groups",
+        "describe_users"
     ],
     "mgh": [
+        "list_application_states",
         "list_migration_tasks",
         "list_progress_update_streams"
     ],
-    "mobile": [
-        "list_bundles",
-        "list_projects"
+    "mgn": [
+        "describe_jobs",
+        "describe_launch_configuration_templates",
+        "describe_replication_configuration_templates",
+        "describe_source_servers",
+        "describe_vcenter_clients",
+        "list_applications",
+        "list_connectors",
+        "list_exports",
+        "list_import_file_enrichments",
+        "list_imports",
+        "list_managed_accounts",
+        "list_network_migration_definitions",
+        "list_waves"
     ],
-    "models.lex": [
-        "get_bots",
-        "get_builtin_intents",
-        "get_builtin_slot_types",
-        "get_intents",
-        "get_slot_types"
+    "migration-hub-refactor-spaces": [
+        "list_environments"
     ],
-    "monitoring": [
-        "describe_alarm_history",
-        "describe_alarms",
-        "list_dashboards"
+    "migrationhub-config": [
+        "describe_home_region_controls",
+        "get_home_region"
+    ],
+    "migrationhuborchestrator": [
+        "list_plugins",
+        "list_templates",
+        "list_workflows"
+    ],
+    "migrationhubstrategy": [
+        "get_latest_assessment_id",
+        "get_portfolio_preferences",
+        "get_portfolio_summary",
+        "list_analyzable_servers",
+        "list_application_components",
+        "list_collectors",
+        "list_import_file_task",
+        "list_servers"
+    ],
+    "mpa": [
+        "list_approval_teams",
+        "list_identity_sources",
+        "list_policies"
     ],
     "mq": [
+        "describe_broker_engine_types",
+        "describe_broker_instance_options",
         "list_brokers",
         "list_configurations"
     ],
-    "mturk-requester": [
+    "mturk": [
         "get_account_balance",
         "list_bonus_payments",
-        "list_hi_ts",
+        "list_hits",
         "list_qualification_requests",
-        "list_reviewable_hi_ts",
+        "list_reviewable_hits",
         "list_worker_blocks"
     ],
-    "opsworks": [
-        "describe_agent_versions",
-        "describe_apps",
-        "describe_commands",
-        "describe_deployments",
-        "describe_ecs_clusters",
-        "describe_elastic_ips",
-        "describe_elastic_load_balancers",
-        "describe_instances",
-        "describe_layers",
-        "describe_my_user_profile",
-        "describe_operating_systems",
-        "describe_permissions",
-        "describe_raid_arrays",
-        "describe_user_profiles",
-        "describe_volumes"
+    "mwaa": [
+        "list_environments"
     ],
-    "opworks": [
-        "describe_account_attributes",
-        "describe_backups",
-        "describe_servers"
+    "mwaa-serverless": [
+        "list_workflows"
+    ],
+    "neptune": [
+        "describe_db_cluster_endpoints",
+        "describe_db_cluster_parameter_groups",
+        "describe_db_cluster_snapshots",
+        "describe_db_clusters",
+        "describe_db_engine_versions",
+        "describe_db_instances",
+        "describe_db_parameter_groups",
+        "describe_db_subnet_groups",
+        "describe_event_categories",
+        "describe_event_subscriptions",
+        "describe_global_clusters",
+        "describe_pending_maintenance_actions"
+    ],
+    "neptune-graph": [
+        "list_export_tasks",
+        "list_graph_snapshots",
+        "list_graphs",
+        "list_import_tasks"
+    ],
+    "neptunedata": [
+        "get_engine_status",
+        "get_propertygraph_statistics",
+        "get_propertygraph_stream",
+        "get_propertygraph_summary",
+        "get_rdf_graph_summary",
+        "get_sparql_statistics",
+        "get_sparql_stream",
+        "list_gremlin_queries",
+        "list_loader_jobs",
+        "list_ml_data_processing_jobs",
+        "list_ml_endpoints",
+        "list_ml_model_training_jobs",
+        "list_ml_model_transform_jobs",
+        "list_open_cypher_queries"
+    ],
+    "network-firewall": [
+        "describe_container_association",
+        "describe_firewall",
+        "describe_firewall_metadata",
+        "describe_firewall_policy",
+        "describe_logging_configuration",
+        "describe_proxy",
+        "describe_proxy_configuration",
+        "describe_proxy_rule_group",
+        "describe_rule_group",
+        "describe_rule_group_metadata",
+        "describe_rule_group_summary",
+        "describe_tls_inspection_configuration",
+        "list_analysis_reports",
+        "list_container_associations",
+        "list_firewall_policies",
+        "list_firewalls",
+        "list_proxies",
+        "list_proxy_configurations",
+        "list_proxy_rule_groups",
+        "list_rule_groups",
+        "list_tls_inspection_configurations",
+        "list_vpc_endpoint_associations"
+    ],
+    "networkflowmonitor": [
+        "list_monitors",
+        "list_scopes"
+    ],
+    "networkmanager": [
+        "describe_global_networks",
+        "list_attachments",
+        "list_connect_peers",
+        "list_core_networks",
+        "list_organization_service_access_status",
+        "list_peerings"
+    ],
+    "networkmonitor": [
+        "list_monitors"
+    ],
+    "notifications": [
+        "get_notifications_access_for_organization",
+        "list_managed_notification_configurations",
+        "list_managed_notification_events",
+        "list_notification_configurations",
+        "list_notification_events",
+        "list_notification_hubs"
+    ],
+    "notificationscontacts": [
+        "list_email_contacts"
+    ],
+    "nova-act": [
+        "list_workflow_definitions"
+    ],
+    "oam": [
+        "list_links",
+        "list_sinks"
+    ],
+    "observabilityadmin": [
+        "get_telemetry_enrichment_status",
+        "get_telemetry_evaluation_status",
+        "get_telemetry_evaluation_status_for_organization",
+        "list_centralization_rules_for_organization",
+        "list_resource_telemetry",
+        "list_resource_telemetry_for_organization",
+        "list_s3_table_integrations",
+        "list_telemetry_pipelines",
+        "list_telemetry_rules",
+        "list_telemetry_rules_for_organization"
+    ],
+    "odb": [
+        "get_oci_onboarding_status",
+        "list_autonomous_database_character_sets",
+        "list_autonomous_database_versions",
+        "list_autonomous_databases",
+        "list_cloud_autonomous_vm_clusters",
+        "list_cloud_exadata_infrastructures",
+        "list_cloud_vm_clusters",
+        "list_db_system_shapes",
+        "list_gi_versions",
+        "list_odb_networks",
+        "list_odb_peering_connections"
+    ],
+    "omics": [
+        "list_annotation_import_jobs",
+        "list_annotation_stores",
+        "list_batch",
+        "list_configurations",
+        "list_reference_stores",
+        "list_run_caches",
+        "list_run_groups",
+        "list_runs",
+        "list_sequence_stores",
+        "list_variant_import_jobs",
+        "list_variant_stores",
+        "list_workflows"
+    ],
+    "opensearch": [
+        "describe_inbound_connections",
+        "describe_outbound_connections",
+        "describe_packages",
+        "describe_reserved_instance_offerings",
+        "describe_reserved_instances",
+        "get_compatible_versions",
+        "get_default_application_setting",
+        "list_applications",
+        "list_direct_query_data_sources",
+        "list_domain_names",
+        "list_versions",
+        "list_vpc_endpoints"
+    ],
+    "opensearchserverless": [
+        "get_account_settings",
+        "get_policies_stats",
+        "list_collection_groups",
+        "list_collections",
+        "list_vpc_endpoints"
     ],
     "organizations": [
         "describe_organization",
+        "describe_resource_policy",
         "list_accounts",
         "list_aws_service_access_for_organization",
         "list_create_account_status",
+        "list_delegated_administrators",
         "list_handshakes_for_account",
         "list_handshakes_for_organization",
         "list_roots"
     ],
+    "osis": [
+        "list_pipeline_blueprints",
+        "list_pipeline_endpoint_connections",
+        "list_pipeline_endpoints",
+        "list_pipelines"
+    ],
+    "outposts": [
+        "list_capacity_tasks",
+        "list_catalog_items",
+        "list_orderable_instance_types",
+        "list_orders",
+        "list_outposts",
+        "list_quotes",
+        "list_sites"
+    ],
+    "payment-cryptography": [
+        "get_default_key_replication_regions",
+        "list_aliases",
+        "list_keys"
+    ],
+    "pca-connector-ad": [
+        "list_connectors",
+        "list_directory_registrations"
+    ],
+    "pca-connector-scep": [
+        "list_connectors"
+    ],
+    "pcs": [
+        "list_clusters"
+    ],
+    "personalize": [
+        "list_batch_inference_jobs",
+        "list_batch_segment_jobs",
+        "list_campaigns",
+        "list_data_deletion_jobs",
+        "list_dataset_export_jobs",
+        "list_dataset_groups",
+        "list_dataset_import_jobs",
+        "list_datasets",
+        "list_event_trackers",
+        "list_filters",
+        "list_metric_attribution_metrics",
+        "list_metric_attributions",
+        "list_recipes",
+        "list_recommenders",
+        "list_schemas",
+        "list_solution_versions",
+        "list_solutions"
+    ],
+    "personalize-runtime": [
+        "get_action_recommendations",
+        "get_recommendations"
+    ],
     "pinpoint": [
-        "get_apps"
+        "get_apps",
+        "get_recommender_configurations",
+        "list_templates"
+    ],
+    "pinpoint-email": [
+        "get_account",
+        "get_dedicated_ips",
+        "get_deliverability_dashboard_options",
+        "list_configuration_sets",
+        "list_dedicated_ip_pools",
+        "list_deliverability_test_reports",
+        "list_email_identities"
+    ],
+    "pinpoint-sms-voice": [
+        "list_configuration_sets"
+    ],
+    "pinpoint-sms-voice-v2": [
+        "describe_account_attributes",
+        "describe_account_limits",
+        "describe_configuration_sets",
+        "describe_notify_configurations",
+        "describe_notify_templates",
+        "describe_opt_out_lists",
+        "describe_phone_numbers",
+        "describe_pools",
+        "describe_protect_configurations",
+        "describe_rcs_agents",
+        "describe_registration_attachments",
+        "describe_registration_type_definitions",
+        "describe_registrations",
+        "describe_sender_ids",
+        "describe_spend_limits",
+        "describe_verified_destination_numbers",
+        "list_notify_countries"
+    ],
+    "pipes": [
+        "list_pipes"
     ],
     "polly": [
         "describe_voices",
@@ -789,37 +2302,39 @@ BRUTEFORCE_TESTS = {
     "pricing": [
         "describe_services"
     ],
-    "projects.iot1click": [
-        "list_projects"
+    "proton": [
+        "get_account_settings",
+        "get_resources_summary",
+        "list_components",
+        "list_deployments",
+        "list_environment_templates",
+        "list_environments",
+        "list_repositories",
+        "list_service_instances",
+        "list_service_templates",
+        "list_services"
+    ],
+    "qbusiness": [
+        "list_applications",
+        "list_plugin_type_metadata"
+    ],
+    "qconnect": [
+        "list_assistants",
+        "list_knowledge_bases"
     ],
     "ram": [
-        "get_resource_share_invitations"
+        "get_resource_share_invitations",
+        "list_permission_associations",
+        "list_permissions",
+        "list_replace_permission_associations_work",
+        "list_resource_types",
+        "list_source_associations"
     ],
     "rds": [
-        "describe_db_engine_versions",
-        "describe_db_instances",
-        "describe_db_parameter_groups",
-        "describe_db_security_groups",
-        "describe_db_snapshots",
-        "describe_db_subnet_groups",
-        "describe_event_categories",
-        "describe_event_subscriptions",
-        "describe_option_groups",
-        "describe_reserved_db_instances",
-        "describe_reserved_db_instances_offerings",
-        "describe_db_engine_versions",
-        "describe_db_instances",
-        "describe_db_parameter_groups",
-        "describe_db_security_groups",
-        "describe_db_snapshots",
-        "describe_db_subnet_groups",
-        "describe_event_categories",
-        "describe_event_subscriptions",
-        "describe_option_groups",
-        "describe_reserved_db_instances",
-        "describe_reserved_db_instances_offerings",
         "describe_account_attributes",
+        "describe_blue_green_deployments",
         "describe_certificates",
+        "describe_db_cluster_automated_backups",
         "describe_db_cluster_endpoints",
         "describe_db_cluster_parameter_groups",
         "describe_db_cluster_snapshots",
@@ -827,97 +2342,154 @@ BRUTEFORCE_TESTS = {
         "describe_db_engine_versions",
         "describe_db_instance_automated_backups",
         "describe_db_instances",
+        "describe_db_major_engine_versions",
         "describe_db_parameter_groups",
+        "describe_db_proxies",
+        "describe_db_proxy_endpoints",
+        "describe_db_recommendations",
         "describe_db_security_groups",
+        "describe_db_shard_groups",
+        "describe_db_snapshot_tenant_databases",
         "describe_db_snapshots",
         "describe_db_subnet_groups",
         "describe_event_categories",
         "describe_event_subscriptions",
+        "describe_export_tasks",
         "describe_global_clusters",
+        "describe_integrations",
         "describe_option_groups",
         "describe_pending_maintenance_actions",
         "describe_reserved_db_instances",
         "describe_reserved_db_instances_offerings",
+        "describe_serverless_v2_platform_versions",
         "describe_source_regions",
-        "describe_db_cluster_parameter_groups",
-        "describe_db_cluster_snapshots",
-        "describe_db_clusters",
-        "describe_db_engine_versions",
-        "describe_db_instances",
-        "describe_db_parameter_groups",
-        "describe_db_subnet_groups",
-        "describe_event_categories",
-        "describe_event_subscriptions",
-        "describe_pending_maintenance_actions",
-        "describe_db_engine_versions",
-        "describe_db_instances",
-        "describe_db_parameter_groups",
-        "describe_db_security_groups",
-        "describe_db_snapshots",
-        "describe_db_subnet_groups",
-        "describe_event_categories",
-        "describe_event_subscriptions",
-        "describe_option_groups",
-        "describe_reserved_db_instances",
-        "describe_reserved_db_instances_offerings",
-        "describe_db_engine_versions",
-        "describe_db_instances",
-        "describe_db_parameter_groups",
-        "describe_db_security_groups",
-        "describe_db_snapshots",
-        "describe_db_subnet_groups",
-        "describe_event_categories",
-        "describe_event_subscriptions",
-        "describe_option_groups",
-        "describe_reserved_db_instances",
-        "describe_reserved_db_instances_offerings",
-        "describe_db_cluster_parameter_groups",
-        "describe_db_cluster_snapshots",
-        "describe_db_clusters",
-        "describe_db_engine_versions",
-        "describe_db_instances",
-        "describe_db_subnet_groups",
-        "describe_event_categories",
-        "describe_pending_maintenance_actions"
+        "describe_tenant_databases"
     ],
     "redshift": [
         "describe_account_attributes",
+        "describe_authentication_profiles",
         "describe_cluster_db_revisions",
         "describe_cluster_parameter_groups",
         "describe_cluster_security_groups",
+        "describe_cluster_snapshots",
         "describe_cluster_subnet_groups",
         "describe_cluster_tracks",
         "describe_cluster_versions",
         "describe_clusters",
+        "describe_custom_domain_associations",
+        "describe_data_shares",
+        "describe_data_shares_for_consumer",
+        "describe_data_shares_for_producer",
+        "describe_endpoint_access",
+        "describe_endpoint_authorization",
         "describe_event_categories",
         "describe_event_subscriptions",
         "describe_hsm_client_certificates",
         "describe_hsm_configurations",
+        "describe_inbound_integrations",
+        "describe_integrations",
         "describe_orderable_cluster_options",
+        "describe_redshift_idc_applications",
+        "describe_reserved_node_exchange_status",
         "describe_reserved_node_offerings",
         "describe_reserved_nodes",
+        "describe_scheduled_actions",
         "describe_snapshot_copy_grants",
         "describe_snapshot_schedules",
         "describe_storage",
         "describe_table_restore_status",
-        "describe_tags"
+        "describe_tags",
+        "describe_usage_limits",
+        "get_cluster_credentials_with_iam",
+        "list_recommendations"
+    ],
+    "redshift-data": [
+        "list_statements"
+    ],
+    "redshift-serverless": [
+        "get_credentials",
+        "get_snapshot",
+        "list_custom_domain_associations",
+        "list_endpoint_access",
+        "list_managed_workgroups",
+        "list_namespaces",
+        "list_recovery_points",
+        "list_reservation_offerings",
+        "list_reservations",
+        "list_scheduled_actions",
+        "list_snapshot_copy_configurations",
+        "list_snapshots",
+        "list_table_restore_status",
+        "list_tracks",
+        "list_usage_limits",
+        "list_workgroups"
     ],
     "rekognition": [
+        "describe_projects",
         "list_collections",
+        "list_media_analysis_jobs",
         "list_stream_processors"
     ],
-    "robomaker": [
-        "list_deployment_jobs",
-        "list_fleets",
-        "list_robot_applications",
-        "list_robots",
-        "list_simulation_applications",
-        "list_simulation_jobs"
+    "repostspace": [
+        "list_spaces"
+    ],
+    "resiliencehub": [
+        "list_app_assessments",
+        "list_apps",
+        "list_metrics",
+        "list_recommendation_templates",
+        "list_resiliency_policies",
+        "list_resource_grouping_recommendations",
+        "list_suggested_resiliency_policies"
+    ],
+    "resiliencehubv2": [
+        "list_dependencies",
+        "list_policies",
+        "list_reports",
+        "list_services",
+        "list_systems"
+    ],
+    "resource-explorer-2": [
+        "get_account_level_service_configuration",
+        "get_default_view",
+        "get_index",
+        "get_service_index",
+        "list_indexes",
+        "list_managed_views",
+        "list_resources",
+        "list_service_indexes",
+        "list_service_views",
+        "list_streaming_access_for_services",
+        "list_supported_resource_types",
+        "list_views"
+    ],
+    "resource-groups": [
+        "get_account_settings",
+        "get_group",
+        "get_group_configuration",
+        "get_group_query",
+        "list_group_resources",
+        "list_groups",
+        "list_tag_sync_tasks"
+    ],
+    "resourcegroupstaggingapi": [
+        "describe_report_creation",
+        "get_compliance_summary",
+        "get_resources",
+        "get_tag_keys",
+        "list_required_tags"
+    ],
+    "rolesanywhere": [
+        "list_crls",
+        "list_profiles",
+        "list_subjects",
+        "list_trust_anchors"
     ],
     "route53": [
         "get_health_check_count",
         "get_hosted_zone_count",
         "get_traffic_policy_instance_count",
+        "list_cidr_collections",
         "list_health_checks",
         "list_hosted_zones",
         "list_hosted_zones_by_name",
@@ -926,35 +2498,172 @@ BRUTEFORCE_TESTS = {
         "list_traffic_policies",
         "list_traffic_policy_instances"
     ],
+    "route53-recovery-cluster": [
+        "list_routing_controls"
+    ],
+    "route53-recovery-control-config": [
+        "list_clusters",
+        "list_control_panels"
+    ],
+    "route53-recovery-readiness": [
+        "list_cells",
+        "list_cross_account_authorizations",
+        "list_readiness_checks",
+        "list_recovery_groups",
+        "list_resource_sets",
+        "list_rules"
+    ],
     "route53domains": [
         "get_contact_reachability_status",
         "list_domains",
-        "list_operations"
+        "list_operations",
+        "list_prices"
+    ],
+    "route53globalresolver": [
+        "list_access_sources",
+        "list_firewall_domain_lists",
+        "list_global_resolvers"
+    ],
+    "route53profiles": [
+        "list_profile_associations",
+        "list_profiles"
     ],
     "route53resolver": [
+        "list_firewall_configs",
+        "list_firewall_domain_lists",
+        "list_firewall_rule_group_associations",
+        "list_firewall_rule_groups",
+        "list_firewall_rule_types",
+        "list_outpost_resolvers",
+        "list_resolver_configs",
+        "list_resolver_dnssec_configs",
         "list_resolver_endpoints",
+        "list_resolver_query_log_config_associations",
+        "list_resolver_query_log_configs",
         "list_resolver_rule_associations",
         "list_resolver_rules"
     ],
+    "rtbfabric": [
+        "list_requester_gateways",
+        "list_responder_gateways"
+    ],
+    "rum": [
+        "list_app_monitors"
+    ],
     "s3": [
-        "list_buckets"
+        "list_buckets",
+        "list_directory_buckets"
+    ],
+    "s3files": [
+        "list_file_systems",
+        "list_mount_targets"
+    ],
+    "s3outposts": [
+        "list_endpoints",
+        "list_outposts_with_s3"
+    ],
+    "s3tables": [
+        "get_table",
+        "list_table_buckets"
+    ],
+    "s3vectors": [
+        "get_index",
+        "get_vector_bucket",
+        "get_vector_bucket_policy",
+        "list_indexes",
+        "list_vector_buckets",
+        "list_vectors"
     ],
     "sagemaker": [
+        "get_sagemaker_servicecatalog_portfolio_status",
+        "list_actions",
+        "list_ai_benchmark_jobs",
+        "list_ai_recommendation_jobs",
+        "list_ai_workload_configs",
         "list_algorithms",
+        "list_app_image_configs",
+        "list_apps",
+        "list_artifacts",
+        "list_associations",
+        "list_auto_ml_jobs",
+        "list_cluster_scheduler_configs",
+        "list_clusters",
         "list_code_repositories",
         "list_compilation_jobs",
+        "list_compute_quotas",
+        "list_contexts",
+        "list_data_quality_job_definitions",
+        "list_device_fleets",
+        "list_devices",
+        "list_domains",
+        "list_edge_deployment_plans",
+        "list_edge_packaging_jobs",
         "list_endpoint_configs",
         "list_endpoints",
+        "list_experiments",
+        "list_feature_groups",
+        "list_flow_definitions",
+        "list_hubs",
+        "list_human_task_uis",
         "list_hyper_parameter_tuning_jobs",
+        "list_images",
+        "list_inference_components",
+        "list_inference_experiments",
+        "list_inference_recommendations_jobs",
         "list_labeling_jobs",
+        "list_lineage_groups",
+        "list_mlflow_apps",
+        "list_mlflow_tracking_servers",
+        "list_model_bias_job_definitions",
+        "list_model_cards",
+        "list_model_explainability_job_definitions",
+        "list_model_metadata",
+        "list_model_package_groups",
         "list_model_packages",
+        "list_model_quality_job_definitions",
         "list_models",
+        "list_monitoring_alert_history",
+        "list_monitoring_executions",
+        "list_monitoring_schedules",
         "list_notebook_instance_lifecycle_configs",
         "list_notebook_instances",
+        "list_optimization_jobs",
+        "list_partner_apps",
+        "list_pipeline_execution_steps",
+        "list_pipelines",
+        "list_processing_jobs",
+        "list_projects",
+        "list_resource_catalogs",
+        "list_spaces",
+        "list_studio_lifecycle_configs",
         "list_subscribed_workteams",
         "list_training_jobs",
+        "list_training_plans",
         "list_transform_jobs",
+        "list_trial_components",
+        "list_trials",
+        "list_user_profiles",
+        "list_workforces",
         "list_workteams"
+    ],
+    "sagemaker-geospatial": [
+        "list_earth_observation_jobs",
+        "list_raster_data_collections",
+        "list_vector_enrichment_jobs"
+    ],
+    "savingsplans": [
+        "describe_savings_plans",
+        "describe_savings_plans_offering_rates",
+        "describe_savings_plans_offerings"
+    ],
+    "scheduler": [
+        "list_schedule_groups",
+        "list_schedules"
+    ],
+    "schemas": [
+        "get_resource_policy",
+        "list_discoverers",
+        "list_registries"
     ],
     "sdb": [
         "list_domains"
@@ -963,21 +2672,74 @@ BRUTEFORCE_TESTS = {
         "get_random_password",
         "list_secrets"
     ],
+    "security-ir": [
+        "list_cases",
+        "list_memberships"
+    ],
+    "securityagent": [
+        "list_agent_spaces",
+        "list_applications",
+        "list_integrations",
+        "list_private_connections",
+        "list_security_requirement_packs",
+        "list_target_domains"
+    ],
     "securityhub": [
+        "describe_action_targets",
+        "describe_hub",
+        "describe_organization_configuration",
+        "describe_products",
+        "describe_products_v2",
+        "describe_security_hub_v2",
+        "describe_standards",
+        "get_administrator_account",
         "get_enabled_standards",
         "get_findings",
+        "get_findings_v2",
         "get_insights",
         "get_invitations_count",
         "get_master_account",
+        "get_resources_v2",
+        "list_aggregators_v2",
+        "list_automation_rules",
+        "list_automation_rules_v2",
+        "list_configuration_policies",
+        "list_configuration_policy_associations",
+        "list_connectors_v2",
         "list_enabled_products_for_import",
+        "list_finding_aggregators",
         "list_invitations",
-        "list_members"
+        "list_members",
+        "list_organization_admin_accounts",
+        "list_security_control_definitions"
+    ],
+    "securitylake": [
+        "get_data_lake_exception_subscription",
+        "get_data_lake_organization_configuration",
+        "get_data_lake_sources",
+        "list_data_lake_exceptions",
+        "list_data_lakes",
+        "list_log_sources",
+        "list_subscribers"
     ],
     "serverlessrepo": [
         "list_applications"
     ],
+    "service-quotas": [
+        "get_association_for_service_quota_template",
+        "get_auto_management_configuration",
+        "list_requested_service_quota_change_history",
+        "list_service_quota_increase_requests_in_template",
+        "list_services"
+    ],
     "servicecatalog": [
+        "describe_product",
+        "describe_product_as_admin",
+        "describe_provisioned_product",
+        "describe_provisioning_artifact",
+        "describe_provisioning_parameters",
         "get_aws_organizations_access_status",
+        "get_provisioned_product_outputs",
         "list_accepted_portfolio_shares",
         "list_portfolios",
         "list_provisioned_product_plans",
@@ -985,13 +2747,57 @@ BRUTEFORCE_TESTS = {
         "list_service_actions",
         "list_tag_options"
     ],
+    "servicecatalog-appregistry": [
+        "get_configuration",
+        "list_applications",
+        "list_attribute_groups"
+    ],
+    "servicediscovery": [
+        "list_namespaces",
+        "list_operations",
+        "list_services"
+    ],
+    "ses": [
+        "describe_active_receipt_rule_set",
+        "get_account_sending_enabled",
+        "get_send_quota",
+        "get_send_statistics",
+        "list_configuration_sets",
+        "list_custom_verification_email_templates",
+        "list_identities",
+        "list_receipt_filters",
+        "list_receipt_rule_sets",
+        "list_templates",
+        "list_verified_email_addresses"
+    ],
+    "sesv2": [
+        "get_account",
+        "get_dedicated_ips",
+        "get_deliverability_dashboard_options",
+        "list_configuration_sets",
+        "list_contact_lists",
+        "list_custom_verification_email_templates",
+        "list_dedicated_ip_pools",
+        "list_deliverability_test_reports",
+        "list_email_identities",
+        "list_email_templates",
+        "list_export_jobs",
+        "list_import_jobs",
+        "list_multi_region_endpoints",
+        "list_recommendations",
+        "list_reputation_entities",
+        "list_suppressed_destinations",
+        "list_tenants"
+    ],
     "shield": [
+        "describe_attack_statistics",
         "describe_drt_access",
         "describe_emergency_contact_settings",
         "describe_protection",
         "describe_subscription",
         "get_subscription_state",
         "list_attacks",
+        "list_protection_groups",
         "list_protections"
     ],
     "signer": [
@@ -999,31 +2805,42 @@ BRUTEFORCE_TESTS = {
         "list_signing_platforms",
         "list_signing_profiles"
     ],
-    "sms": [
-        "get_app",
-        "get_app_launch_configuration",
-        "get_app_replication_configuration",
-        "get_connectors",
-        "get_replication_jobs",
-        "get_servers",
-        "list_apps"
+    "signin": [
+        "get_console_authorization_configuration",
+        "get_resource_policy",
+        "list_resource_permission_statements"
     ],
-    "sms-voice.pinpoint": [
+    "simpledbv2": [
+        "list_exports"
+    ],
+    "sms-voice": [
         "list_configuration_sets"
+    ],
+    "snow-device-management": [
+        "list_devices",
+        "list_tasks"
     ],
     "snowball": [
         "describe_addresses",
         "get_snowball_usage",
         "list_clusters",
         "list_compatible_images",
-        "list_jobs"
+        "list_jobs",
+        "list_long_term_pricing",
+        "list_pickup_locations"
     ],
     "sns": [
         "get_sms_attributes",
+        "get_sms_sandbox_account_status",
+        "list_origination_numbers",
         "list_phone_numbers_opted_out",
         "list_platform_applications",
+        "list_sms_sandbox_phone_numbers",
         "list_subscriptions",
         "list_topics"
+    ],
+    "socialmessaging": [
+        "list_linked_whatsapp_business_accounts"
     ],
     "sqs": [
         "list_queues"
@@ -1031,57 +2848,195 @@ BRUTEFORCE_TESTS = {
     "ssm": [
         "describe_activations",
         "describe_association",
+        "describe_automation_executions",
         "describe_available_patches",
+        "describe_instance_information",
+        "describe_instance_properties",
         "describe_inventory_deletions",
         "describe_maintenance_window_schedule",
         "describe_maintenance_windows",
+        "describe_ops_items",
+        "describe_parameters",
         "describe_patch_baselines",
         "describe_patch_groups",
         "get_default_patch_baseline",
+        "get_inventory",
         "get_inventory_schema",
+        "get_ops_summary",
+        "list_associations",
         "list_command_invocations",
         "list_commands",
         "list_compliance_items",
         "list_compliance_summaries",
+        "list_documents",
+        "list_nodes",
+        "list_ops_item_events",
+        "list_ops_item_related_items",
+        "list_ops_metadata",
         "list_resource_compliance_summaries",
         "list_resource_data_sync"
     ],
-    "states": [
+    "ssm-contacts": [
+        "list_contacts",
+        "list_engagements",
+        "list_rotations"
+    ],
+    "ssm-guiconnect": [
+        "get_connection_recording_preferences"
+    ],
+    "ssm-incidents": [
+        "list_incident_records",
+        "list_replication_sets",
+        "list_response_plans"
+    ],
+    "ssm-quicksetup": [
+        "get_service_settings",
+        "list_configuration_managers",
+        "list_configurations",
+        "list_quick_setup_types"
+    ],
+    "ssm-sap": [
+        "get_application",
+        "get_database",
+        "list_applications",
+        "list_components",
+        "list_configuration_check_definitions",
+        "list_databases"
+    ],
+    "sso-admin": [
+        "list_application_providers",
+        "list_instances"
+    ],
+    "stepfunctions": [
         "list_activities",
+        "list_executions",
         "list_state_machines"
     ],
     "storagegateway": [
         "describe_tape_archives",
+        "list_automatic_tape_creation_policies",
+        "list_cache_reports",
         "list_file_shares",
+        "list_file_system_associations",
         "list_gateways",
+        "list_tape_pools",
         "list_tapes",
         "list_volumes"
-    ],
-    "streams.dynamodb": [
-        "list_streams"
     ],
     "sts": [
         "get_caller_identity",
         "get_session_token"
+    ],
+    "supplychain": [
+        "list_instances"
     ],
     "support": [
         "describe_cases",
         "describe_services",
         "describe_severity_levels"
     ],
-    "tagging": [
-        "get_resources",
-        "get_tag_keys"
+    "support-app": [
+        "get_account_alias",
+        "list_slack_channel_configurations",
+        "list_slack_workspace_configurations"
+    ],
+    "supportauthz": [
+        "list_support_permit_requests",
+        "list_support_permits"
+    ],
+    "synthetics": [
+        "describe_canaries",
+        "describe_canaries_last_run",
+        "describe_runtime_versions",
+        "list_groups"
+    ],
+    "taxsettings": [
+        "get_tax_exemption_types",
+        "get_tax_inheritance",
+        "get_tax_registration",
+        "list_supplemental_tax_registrations",
+        "list_tax_exemptions",
+        "list_tax_registrations"
+    ],
+    "textract": [
+        "list_adapter_versions",
+        "list_adapters"
+    ],
+    "timestream-influxdb": [
+        "list_db_clusters",
+        "list_db_instances",
+        "list_db_parameter_groups"
+    ],
+    "timestream-query": [
+        "describe_account_settings",
+        "describe_endpoints",
+        "list_scheduled_queries"
+    ],
+    "timestream-write": [
+        "describe_endpoints",
+        "list_batch_load_tasks",
+        "list_databases",
+        "list_tables"
+    ],
+    "tnb": [
+        "list_sol_function_instances",
+        "list_sol_function_packages",
+        "list_sol_network_instances",
+        "list_sol_network_operations",
+        "list_sol_network_packages"
     ],
     "transcribe": [
+        "list_call_analytics_categories",
+        "list_call_analytics_jobs",
+        "list_language_models",
+        "list_medical_scribe_jobs",
+        "list_medical_transcription_jobs",
+        "list_medical_vocabularies",
         "list_transcription_jobs",
-        "list_vocabularies"
+        "list_vocabularies",
+        "list_vocabulary_filters"
     ],
     "transfer": [
-        "list_servers"
+        "list_certificates",
+        "list_connectors",
+        "list_profiles",
+        "list_security_policies",
+        "list_servers",
+        "list_web_apps",
+        "list_workflows"
     ],
     "translate": [
-        "list_terminologies"
+        "list_languages",
+        "list_parallel_data",
+        "list_terminologies",
+        "list_text_translation_jobs"
+    ],
+    "trustedadvisor": [
+        "list_checks",
+        "list_organization_recommendations",
+        "list_recommendations"
+    ],
+    "uxc": [
+        "get_account_customizations",
+        "list_services"
+    ],
+    "verifiedpermissions": [
+        "list_policy_store_aliases",
+        "list_policy_stores"
+    ],
+    "voice-id": [
+        "list_domains"
+    ],
+    "vpc-lattice": [
+        "list_domain_verifications",
+        "list_resource_configurations",
+        "list_resource_gateways",
+        "list_service_network_resource_associations",
+        "list_service_network_service_associations",
+        "list_service_network_vpc_associations",
+        "list_service_networks",
+        "list_services",
+        "list_target_groups"
     ],
     "waf": [
         "get_change_token",
@@ -1098,6 +3053,7 @@ BRUTEFORCE_TESTS = {
         "list_size_constraint_sets",
         "list_sql_injection_match_sets",
         "list_subscribed_rule_groups",
+        "list_web_acls",
         "list_xss_match_sets"
     ],
     "waf-regional": [
@@ -1115,15 +3071,35 @@ BRUTEFORCE_TESTS = {
         "list_size_constraint_sets",
         "list_sql_injection_match_sets",
         "list_subscribed_rule_groups",
+        "list_web_acls",
         "list_xss_match_sets"
+    ],
+    "wafv2": [
+        "get_rule_group",
+        "get_web_acl"
+    ],
+    "wellarchitected": [
+        "get_global_settings",
+        "get_profile_template",
+        "list_lenses",
+        "list_notifications",
+        "list_profile_notifications",
+        "list_profiles",
+        "list_review_templates",
+        "list_share_invitations",
+        "list_workloads"
+    ],
+    "wickr": [
+        "list_networks"
+    ],
+    "wisdom": [
+        "list_assistants",
+        "list_knowledge_bases"
     ],
     "workdocs": [
         "describe_activities",
         "describe_users",
         "get_resources"
-    ],
-    "worklink": [
-        "list_fleets"
     ],
     "workmail": [
         "list_organizations"
@@ -1131,18 +3107,46 @@ BRUTEFORCE_TESTS = {
     "workspaces": [
         "describe_account",
         "describe_account_modifications",
+        "describe_connection_aliases",
         "describe_ip_groups",
         "describe_workspace_bundles",
         "describe_workspace_directories",
         "describe_workspace_images",
         "describe_workspaces",
-        "describe_workspaces_connection_status"
+        "describe_workspaces_connection_status",
+        "describe_workspaces_pools",
+        "get_account_link",
+        "list_account_links"
+    ],
+    "workspaces-instances": [
+        "list_instance_types",
+        "list_regions",
+        "list_workspace_instances"
+    ],
+    "workspaces-thin-client": [
+        "list_devices",
+        "list_environments",
+        "list_software_sets"
+    ],
+    "workspaces-web": [
+        "list_browser_settings",
+        "list_data_protection_settings",
+        "list_ip_access_settings",
+        "list_network_settings",
+        "list_portals",
+        "list_session_loggers",
+        "list_trust_stores",
+        "list_user_access_logging_settings",
+        "list_user_settings"
     ],
     "xray": [
         "get_encryption_config",
         "get_group",
         "get_groups",
+        "get_indexing_rules",
         "get_sampling_rules",
-        "get_sampling_statistic_summaries"
+        "get_sampling_statistic_summaries",
+        "get_trace_segment_destination",
+        "list_resource_policies"
     ]
 }

@@ -16,11 +16,13 @@ Improvements:
     * Increased API call coverage
     * Export as a library
 """
+import os
 import re
-import json
+import sys
 import logging
 import boto3
 import botocore
+import botocore.session
 import random
 
 from botocore.client import Config
@@ -28,11 +30,27 @@ from botocore.endpoint import MAX_POOL_CONNECTIONS
 from multiprocessing.dummy import Pool as ThreadPool
 
 from enumerate_iam.utils.remove_metadata import remove_metadata
-from enumerate_iam.utils.json_utils import json_encoder
 from enumerate_iam.bruteforce_tests import BRUTEFORCE_TESTS
 
 MAX_THREADS = 25
 CLIENT_POOL = {}
+
+# Shared client config. max_attempts was 30, which turned unreachable regional
+# endpoints into multi-minute hangs (issue #14); 3 is plenty for throttling.
+BOTO_CONFIG = Config(
+    connect_timeout=5,
+    read_timeout=5,
+    retries={'max_attempts': 3},
+    max_pool_connections=MAX_POOL_CONNECTIONS * 2,
+)
+
+# Errors that mean "this endpoint didn't answer usefully" — skip and move on.
+RETRYABLE_ERRORS = (
+    botocore.exceptions.ClientError,
+    botocore.exceptions.EndpointConnectionError,
+    botocore.exceptions.ConnectTimeoutError,
+    botocore.exceptions.ReadTimeoutError,
+)
 
 
 def report_arn(candidate):
@@ -50,15 +68,15 @@ def report_arn(candidate):
         arn_path = arn.split(':')[5]
 
         logger.info('-- Account ARN : %s', arn)
-        logger.info('-- Account Id  : %s', arn.split(':')[4])
-        logger.info('-- Account Path: %s', arn.split(':')[5])
+        logger.info('-- Account Id  : %s', arn_id)
+        logger.info('-- Account Path: %s', arn_path)
 
         return arn, arn_id, arn_path
 
     return None, None, None
 
 
-def enumerate_using_bruteforce(access_key, secret_key, session_token, region):
+def enumerate_using_bruteforce(access_key, secret_key, session_token, region, endpoint_url=None):
     """
     Attempt to brute-force common describe calls.
     """
@@ -68,39 +86,33 @@ def enumerate_using_bruteforce(access_key, secret_key, session_token, region):
     logger.info('Attempting common-service describe / list brute force.')
 
     pool = ThreadPool(MAX_THREADS)
-    args_generator = generate_args(access_key, secret_key, session_token, region)
+    args_generator = generate_args(access_key, secret_key, session_token, region, endpoint_url)
 
     try:
-        results = pool.map(check_one_permission, args_generator)
-    except KeyboardInterrupt:
-        print('')
-
-        results = []
-
-        logger.info('Ctrl+C received, stopping all threads.')
-        logger.info('Hit Ctrl+C again to force exit.')
-
         try:
-            pool.close()
-            pool.join()
+            results = pool.map(check_one_permission, args_generator)
         except KeyboardInterrupt:
             print('')
+            logger.info('Ctrl+C received, stopping all threads.')
+            logger.info('Hit Ctrl+C again to force exit.')
             return output
 
-    for thread_result in results:
-        if thread_result is None:
-            continue
+        for thread_result in results:
+            if thread_result is None:
+                continue
 
-        key, action_result = thread_result
-        output[key] = action_result
-
-    pool.close()
-    pool.join()
+            key, action_result = thread_result
+            output[key] = action_result
+    finally:
+        # terminate() (not just close/join) releases the pool's internal
+        # semaphores, avoiding the leaked-semaphore warning at shutdown (#24).
+        pool.terminate()
+        pool.join()
 
     return output
 
 
-def generate_args(access_key, secret_key, session_token, region):
+def generate_args(access_key, secret_key, session_token, region, endpoint_url):
 
     service_names = list(BRUTEFORCE_TESTS.keys())
 
@@ -111,11 +123,11 @@ def generate_args(access_key, secret_key, session_token, region):
         random.shuffle(actions)
 
         for action in actions:
-            yield access_key, secret_key, session_token, region, service_name, action
+            yield access_key, secret_key, session_token, region, endpoint_url, service_name, action
 
 
-def get_client(access_key, secret_key, session_token, service_name, region):
-    key = '%s-%s-%s-%s-%s' % (access_key, secret_key, session_token, service_name, region)
+def get_client(access_key, secret_key, session_token, service_name, region, endpoint_url=None):
+    key = '%s-%s-%s-%s-%s-%s' % (access_key, secret_key, session_token, service_name, region, endpoint_url)
 
     client = CLIENT_POOL.get(key, None)
     if client is not None:
@@ -124,11 +136,6 @@ def get_client(access_key, secret_key, session_token, service_name, region):
     logger = logging.getLogger()
     logger.debug('Getting client for %s in region %s' % (service_name, region))
 
-    config = Config(connect_timeout=5,
-                    read_timeout=5,
-                    retries={'max_attempts': 30},
-                    max_pool_connections=MAX_POOL_CONNECTIONS * 2)
-
     try:
         client = boto3.client(
             service_name,
@@ -136,8 +143,9 @@ def get_client(access_key, secret_key, session_token, service_name, region):
             aws_secret_access_key=secret_key,
             aws_session_token=session_token,
             region_name=region,
+            endpoint_url=endpoint_url,
             verify=False,
-            config=config,
+            config=BOTO_CONFIG,
         )
     except:
         # The service might not be available in this region
@@ -149,10 +157,10 @@ def get_client(access_key, secret_key, session_token, service_name, region):
 
 
 def check_one_permission(arg_tuple):
-    access_key, secret_key, session_token, region, service_name, operation_name = arg_tuple
+    access_key, secret_key, session_token, region, endpoint_url, service_name, operation_name = arg_tuple
     logger = logging.getLogger()
 
-    service_client = get_client(access_key, secret_key, session_token, service_name, region)
+    service_client = get_client(access_key, secret_key, session_token, service_name, region, endpoint_url)
     if service_client is None:
         return
 
@@ -168,10 +176,7 @@ def check_one_permission(arg_tuple):
 
     try:
         action_response = action_function()
-    except (botocore.exceptions.ClientError,
-            botocore.exceptions.EndpointConnectionError,
-            botocore.exceptions.ConnectTimeoutError,
-            botocore.exceptions.ReadTimeoutError):
+    except RETRYABLE_ERRORS:
         return
     except botocore.exceptions.ParamValidationError:
         logger.error('Remove %s.%s action' % (service_name, operation_name))
@@ -186,11 +191,40 @@ def check_one_permission(arg_tuple):
     return key, remove_metadata(action_response)
 
 
+class ColorFormatter(logging.Formatter):
+    GREEN = '\033[32m'
+    RED = '\033[31m'
+    YELLOW = '\033[33m'
+    RESET = '\033[0m'
+
+    # Honour NO_COLOR (https://no-color.org) and skip colours when not a TTY.
+    enabled = sys.stderr.isatty() and 'NO_COLOR' not in os.environ
+
+    HITS = ('worked!', 'Run for the hills', 'root credentials')
+
+    def format(self, record):
+        line = super().format(record)
+        if not self.enabled:
+            return line
+
+        if record.levelno >= logging.ERROR:
+            colour = self.RED
+        elif record.levelno == logging.WARNING:
+            colour = self.YELLOW
+        elif any(hit in record.getMessage() for hit in self.HITS):
+            colour = self.GREEN
+        else:
+            return line
+
+        return '%s%s%s' % (colour, line, self.RESET)
+
+
 def configure_logging():
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(process)d - [%(levelname)s] %(message)s',
-    )
+    handler = logging.StreamHandler()
+    handler.setFormatter(ColorFormatter(
+        '%(asctime)s - %(process)d - [%(levelname)s] %(message)s'
+    ))
+    logging.basicConfig(level=logging.INFO, handlers=[handler])
 
     # Suppress boto INFO.
     logging.getLogger('boto3').setLevel(logging.WARNING)
@@ -207,7 +241,7 @@ def configure_logging():
     urllib3.disable_warnings(botocore.vendored.requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
 
-def enumerate_iam(access_key, secret_key, session_token, region):
+def enumerate_iam(access_key, secret_key, session_token, region, endpoint_url=None, dry_run=False):
     """IAM Account Enumerator.
 
     This code provides a mechanism to attempt to validate the permissions assigned
@@ -215,14 +249,40 @@ def enumerate_iam(access_key, secret_key, session_token, region):
     """
     output = dict()
     configure_logging()
+    logger = logging.getLogger()
 
-    output['iam'] = enumerate_using_iam(access_key, secret_key, session_token, region)
-    output['bruteforce'] = enumerate_using_bruteforce(access_key, secret_key, session_token, region)
+    if dry_run:
+        total = sum(len(ops) for ops in BRUTEFORCE_TESTS.values())
+        logger.info('Dry run: would test %d operations across %d services '
+                    '(no AWS API calls made).', total, len(BRUTEFORCE_TESTS))
+        for service_name in sorted(BRUTEFORCE_TESTS):
+            for operation_name in BRUTEFORCE_TESTS[service_name]:
+                logger.info('-- %s.%s', service_name, operation_name)
+        return output
+
+    if access_key is None and secret_key is None:
+        # Fall back to boto3's default credential chain (env vars, shared
+        # config/profile, instance role). Fail early with a clear message if it
+        # resolves to nothing, rather than crashing mid-enumeration.
+        try:
+            found = botocore.session.Session().get_credentials()
+        except botocore.exceptions.BotoCoreError:
+            found = None
+        if found is None:
+            logger.error(
+                'No credentials provided and none found in the environment, '
+                'shared config, or instance metadata. Pass --access-key/'
+                '--secret-key or set AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY.'
+            )
+            return output
+
+    output['iam'] = enumerate_using_iam(access_key, secret_key, session_token, region, endpoint_url)
+    output['bruteforce'] = enumerate_using_bruteforce(access_key, secret_key, session_token, region, endpoint_url)
 
     return output
 
 
-def enumerate_using_iam(access_key, secret_key, session_token, region):
+def enumerate_using_iam(access_key, secret_key, session_token, region, endpoint_url=None):
     output = dict()
     logger = logging.getLogger()
 
@@ -232,19 +292,20 @@ def enumerate_using_iam(access_key, secret_key, session_token, region):
         'iam',
         aws_access_key_id=access_key,
         aws_secret_access_key=secret_key,
-        aws_session_token=session_token
+        aws_session_token=session_token,
+        region_name=region,
+        endpoint_url=endpoint_url,
+        verify=False,
+        config=BOTO_CONFIG,
     )
 
     # Try for the kitchen sink.
     try:
         everything = iam_client.get_account_authorization_details()
-    except (botocore.exceptions.ClientError,
-            botocore.exceptions.EndpointConnectionError,
-            botocore.exceptions.ReadTimeoutError):
+    except RETRYABLE_ERRORS:
         pass
     else:
         logger.info('Run for the hills, get_account_authorization_details worked!')
-        logger.info('-- %s', json.dumps(everything, indent=4, default=json_encoder))
 
         output['iam.get_account_authorization_details'] = remove_metadata(everything)
 
@@ -332,7 +393,7 @@ def enumerate_user(iam_client, output):
     # Attempt to get user to start.
     try:
         user = iam_client.get_user()
-    except botocore.exceptions.ClientError as err:
+    except RETRYABLE_ERRORS as err:
         arn, arn_id, arn_path = report_arn(str(err))
 
         output['arn'] = arn
@@ -348,7 +409,7 @@ def enumerate_user(iam_client, output):
     if 'UserName' not in user['User']:
         if user['User']['Arn'].endswith(':root'):
             # OMG
-            logger.warn('Found root credentials!')
+            logger.warning('Found root credentials!')
             output['root_account'] = True
             return
         else:
