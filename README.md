@@ -31,7 +31,8 @@ calls are performed).
 --session-token   STS session token
 --region          AWS region to send API requests to (default: us-east-1)
 --endpoint-url    Override the AWS endpoint URL (e.g. a localstack or proxy URL)
---output FILE     Write JSON results to FILE instead of stdout
+--output [FILE]   Write JSON results to a file (default: stdout). Bare --output
+                  auto-names it enumerate-iam-<account-id>.json
 --dry-run         List the operations that would be tested and exit
 --verbose         Show all progress chatter (default shows only the results)
 ```

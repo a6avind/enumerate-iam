@@ -69,6 +69,19 @@ def json_encoder(obj):
     raise TypeError('Object of type %s is not JSON serializable' % type(obj).__name__)
 
 
+def account_id(output):
+    """Best-effort AWS account id from an enumerate_iam() result, or None."""
+    iam = output.get('iam', {})
+    if iam.get('arn_id'):
+        return iam['arn_id']
+
+    arn = iam.get('iam.get_user', {}).get('User', {}).get('Arn')
+    if arn and len(arn.split(':')) > 4:
+        return arn.split(':')[4]
+
+    return None
+
+
 def report_arn(candidate):
     """
     Attempt to extract and slice up an ARN from the input string

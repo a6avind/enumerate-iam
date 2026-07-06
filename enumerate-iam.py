@@ -2,7 +2,9 @@
 import json
 import argparse
 
-from enumerate_iam.main import enumerate_iam, json_encoder
+from enumerate_iam.main import enumerate_iam, json_encoder, account_id
+
+AUTO_OUTPUT = '\x00auto'
 
 
 def main():
@@ -17,8 +19,9 @@ def main():
     parser.add_argument('--endpoint-url', help='Override the AWS endpoint URL (e.g. a localstack or proxy URL)')
     parser.add_argument('--dry-run', action='store_true',
                         help='List the operations that would be tested and exit, without calling AWS')
-    parser.add_argument('--output', metavar='FILE',
-                        help='Write JSON results to FILE instead of stdout')
+    parser.add_argument('--output', nargs='?', const=AUTO_OUTPUT, metavar='FILE',
+                        help='Write JSON results to a file. Bare --output auto-names it '
+                             'enumerate-iam-<account-id>.json; pass a path to override.')
     parser.add_argument('--verbose', action='store_true',
                         help='Show all progress chatter (default shows only findings, identity and summary)')
 
@@ -34,12 +37,15 @@ def main():
 
     if not args.dry_run:
         results = json.dumps(output, indent=4, default=json_encoder, sort_keys=True)
-        if args.output:
-            with open(args.output, 'w') as handle:
-                handle.write(results + '\n')
-            print('Results written to %s' % args.output)
-        else:
+        if args.output is None:
             print(results)
+        else:
+            dest = args.output
+            if dest == AUTO_OUTPUT:
+                dest = 'enumerate-iam-%s.json' % (account_id(output) or 'unknown')
+            with open(dest, 'w') as handle:
+                handle.write(results + '\n')
+            print('Results written to %s' % dest)
 
 
 if __name__ == '__main__':
