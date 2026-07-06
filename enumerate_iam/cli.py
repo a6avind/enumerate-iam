@@ -1,10 +1,10 @@
-import sys
 import json
 import argparse
 
 import boto3
 
-from enumerate_iam.main import enumerate_iam, json_encoder, account_id, MAX_THREADS
+from enumerate_iam.main import (enumerate_iam, json_encoder, account_id,
+                                MAX_THREADS, DEFAULT_DELAY, DEFAULT_JITTER)
 
 AUTO_OUTPUT = '\x00auto'
 STDOUT = '-'
@@ -19,7 +19,12 @@ def main():
     parser.add_argument('--secret-key', help='AWS secret key (else env/profile)')
     parser.add_argument('--session-token', help='STS session token')
     parser.add_argument('--profile', help='Named profile from the shared AWS credentials file')
-    parser.add_argument('--region', help='AWS region to send API requests to', default='us-east-1')
+    parser.add_argument('--region', metavar='REGION',
+                        help='Limit the scan to a single region (default: sweep every region '
+                             'AWS advertises). Also the endpoint for the global IAM/STS calls.')
+    parser.add_argument('--regions', metavar='LIST',
+                        help='Comma-separated regions to sweep instead of all (e.g. '
+                             'us-east-1,eu-west-1); regional secrets differ per region')
     parser.add_argument('--endpoint-url', help='Override the AWS endpoint URL (e.g. a localstack or proxy URL)')
     parser.add_argument('--output', metavar='FILE', default=AUTO_OUTPUT,
                         help='Where to write the full JSON results: a path, or - for stdout. '
@@ -29,13 +34,21 @@ def main():
     parser.add_argument('--probe', action='store_true',
                         help='Also confirm parameter-requiring read permissions via error-code '
                              'analysis (much broader coverage, slower)')
-    parser.add_argument('--all-services', action='store_true',
-                        help='Sweep every zero-arg list/describe/get op across all AWS services '
-                             '(not just the curated set) and scan every response for secrets '
-                             '(widest coverage, many calls, slow)')
+    parser.add_argument('--curated', action='store_true',
+                        help='Only test the hand-picked BRUTEFORCE_TESTS set instead of sweeping '
+                             'every service (faster, fewer calls). Default sweeps all services.')
+    parser.add_argument('--entropy', action='store_true',
+                        help='Also flag high-entropy strings as possible secrets (noisier; off by '
+                             'default, which keeps pattern/named-key/base64 detection only)')
     parser.add_argument('--threads', metavar='N', type=int, default=MAX_THREADS,
-                        help='Concurrent API calls (default %(default)s; raise for the '
-                             '--all-services sweep, lower to avoid throttling)')
+                        help='Concurrent API calls (default %(default)s; '
+                             'lower to avoid throttling)')
+    parser.add_argument('--delay', metavar='SECONDS', type=float, default=DEFAULT_DELAY,
+                        help='Base sleep before each API call (default %(default)s; '
+                             '0 to disable throttling)')
+    parser.add_argument('--jitter', metavar='SECONDS', type=float, default=DEFAULT_JITTER,
+                        help='Extra random 0..N seconds added to --delay per call '
+                             '(default %(default)s)')
     parser.add_argument('--timeout', metavar='MINUTES', type=float,
                         help='Wall-clock cap on the brute-force/probe phases')
     parser.add_argument('--dry-run', action='store_true',
@@ -59,18 +72,36 @@ def main():
     if args.services:
         services = {s.strip() for s in args.services.split(',') if s.strip()}
 
+    # Default: sweep every region. Narrow with --region (one) or --regions (list).
+    # A custom --endpoint-url (localstack/proxy) isn't multi-region, so default it
+    # to a single region.
+    if args.regions:
+        regions = [r.strip() for r in args.regions.split(',') if r.strip()]
+    elif args.region:
+        regions = [args.region]
+    elif args.endpoint_url:
+        regions = ['us-east-1']
+    else:
+        session = boto3.Session(profile_name=args.profile) if args.profile else boto3.Session()
+        regions = session.get_available_regions('ec2')
+    primary = args.region or ('us-east-1' if 'us-east-1' in regions else regions[0])
+
     output = enumerate_iam(access_key,
                            secret_key,
                            session_token,
-                           args.region,
+                           primary,
                            endpoint_url=args.endpoint_url,
                            dry_run=args.dry_run,
                            verbose=args.verbose,
                            services=services,
                            probe=args.probe,
-                           all_services=args.all_services,
+                           full=not args.curated,
+                           entropy=args.entropy,
                            threads=args.threads,
-                           timeout=args.timeout * 60 if args.timeout else None)
+                           timeout=args.timeout * 60 if args.timeout else None,
+                           regions=regions,
+                           delay=args.delay,
+                           jitter=args.jitter)
 
     if not args.dry_run:
         results = json.dumps(output, indent=4, default=json_encoder, sort_keys=True)

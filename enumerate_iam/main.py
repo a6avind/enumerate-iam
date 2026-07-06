@@ -40,6 +40,28 @@ from enumerate_iam.bruteforce_tests import BRUTEFORCE_TESTS
 MAX_THREADS = 25
 CLIENT_POOL = {}
 
+# Upper bound on items pulled per paginated read, so one huge list (millions of
+# S3 objects, log events, ...) can't exhaust memory/time. Truncation is logged.
+MAX_PAGINATED_ITEMS = 5000
+
+# Per-call throttle (seconds): sleep DELAY + random[0, JITTER) before each API
+# call. Default 2-7s keeps the sweep low-and-slow under rate limits / detection.
+DEFAULT_DELAY = 2.0
+DEFAULT_JITTER = 5.0
+REQUEST_DELAY = DEFAULT_DELAY
+REQUEST_JITTER = DEFAULT_JITTER
+
+# High-entropy heuristic is noisy (flags random-looking names/ids that aren't
+# secrets), so it's opt-in; pattern + secret-named-key + base64 detection stay on.
+SCAN_ENTROPY = False
+
+
+def _throttle():
+    delay = REQUEST_DELAY + (random.uniform(0, REQUEST_JITTER) if REQUEST_JITTER else 0.0)
+    if delay:
+        time.sleep(delay)
+
+
 # max_attempts was 30, which made unreachable endpoints hang for minutes.
 # adaptive mode adds client-side rate limiting so bursts don't trip throttling.
 BOTO_CONFIG = Config(
@@ -96,11 +118,11 @@ def account_id(output):
 
 
 def report_arn(candidate):
-    """
-    Attempt to extract and slice up an ARN from the input string
-    """
-    logger = logging.getLogger()
+    """Extract and slice an ARN from an IAM error string, for output['arn'].
 
+    Identity is printed once by get_identity() (authoritative sts call); this is
+    a silent extractor so the ARN/id aren't logged a second time.
+    """
     arn_search = re.search(r'.*(arn:aws:.*?) .*', candidate)
 
     if arn_search:
@@ -108,10 +130,6 @@ def report_arn(candidate):
 
         arn_id = arn.split(':')[4]
         arn_path = arn.split(':')[5]
-
-        logger.info('-- Account ARN : %s', arn)
-        logger.info('-- Account Id  : %s', arn_id)
-        logger.info('-- Account Path: %s', arn_path)
 
         return arn, arn_id, arn_path
 
@@ -141,8 +159,10 @@ def action_from_key(session, key):
 def confirmed_actions(output):
     """Synthesise the sorted list of IAM actions confirmed by the enumeration."""
     session = botocore.session.get_session()
-    keys = (list(output.get('bruteforce', {})) + list(output.get('probe', {}))
-            + list(output.get('all_services', {})))
+    keys = list(output.get('bruteforce', {})) + list(output.get('probe', {}))
+    # Strip an optional '@region' suffix; the same action confirmed in several
+    # regions collapses to one entry.
+    keys = [k.partition('@')[0] for k in keys]
     keys += [k for k in output.get('iam', {}) if k.startswith('iam.')]
 
     actions = {action_from_key(session, k) for k in keys}
@@ -310,8 +330,19 @@ def check_one_permission(arg_tuple):
 
     logger.debug('Testing %s.%s() in region %s' % (service_name, operation_name, region))
 
+    _throttle()
     try:
-        action_response = action_function()
+        if service_client.can_paginate(operation_name):
+            # Capture every page (all functions/resources, not just the first ~50),
+            # so the secret scan sees the full result. Capped to bound huge lists.
+            result = service_client.get_paginator(operation_name).paginate(
+                PaginationConfig={'MaxItems': MAX_PAGINATED_ITEMS}).build_full_result()
+            if result.get('NextToken') or result.get('NextMarker'):
+                logger.warning('%s.%s truncated at %d items (more pages exist)',
+                               service_name, operation_name, MAX_PAGINATED_ITEMS)
+            action_response = result
+        else:
+            action_response = action_function()
     except botocore.exceptions.ParamValidationError:
         # Listed before SKIPPABLE_ERRORS (its superclass) to keep this signal.
         logger.error('Remove %s.%s action' % (service_name, operation_name))
@@ -387,6 +418,7 @@ def check_one_probe(arg_tuple):
     kwargs = {name: dummy_for_shape(input_shape.members[name])
               for name in input_shape.required_members}
 
+    _throttle()
     try:
         getattr(client, operation_name)(**kwargs)
     except botocore.exceptions.ParamValidationError:
@@ -480,13 +512,6 @@ _PLACEHOLDER_VALUES = frozenset({
 })
 
 
-def _redact(value):
-    """Tiered mask: short values fully hidden, longer ones show only edges."""
-    if len(value) <= 8:
-        return '*' * len(value)
-    return '%s%s%s' % (value[:3], '*' * (len(value) - 6), value[-3:])
-
-
 def _looks_placeholder(value):
     low = value.strip().lower()
     if low in _PLACEHOLDER_VALUES or len(low) < 6:
@@ -512,14 +537,17 @@ _TOKEN_SHAPE = re.compile(r'[A-Za-z0-9+/=_\-]{20,200}')
 
 def _is_high_entropy_secret(value):
     """Random-looking token unlikely to be a benign id/hash. Deliberately
-    conservative: base64-alphabet only, entropy >= 4.0 bits/char. Pure hex is
-    skipped (md5/sha/resource-fingerprints are hex but rarely secrets)."""
+    conservative: base64-alphabet only, entropy >= 4.0 bits/char. Pure hex and
+    all-uppercase ids are skipped (md5/sha fingerprints; AWS unique ids like
+    AROA…/AIDA… are uppercase, real base64 secrets are mixed-case)."""
     v = value.strip()
     if not _TOKEN_SHAPE.fullmatch(v):
         return False
     if v.startswith(('arn:', 'http://', 'https://')):
         return False
     if re.fullmatch(r'[0-9a-fA-F]+', v):  # pure hex -> too many benign hashes/ids
+        return False
+    if v.isupper():  # AWS RoleId/UserId/AccessKeyId and other uppercase ids
         return False
     return _shannon_entropy(v) >= 4.0
 
@@ -543,76 +571,124 @@ def _maybe_b64_decode(value):
     return text
 
 
+# Key names whose value is a public identifier / metadata, never a secret. The
+# fuzzy entropy heuristic is suppressed for these (RoleId, DisplayName, Arn, ...);
+# explicit value patterns still fire regardless of key.
+_BENIGN_KEY = re.compile(
+    r'(id|ids|arn|arns|name|names|region|version|zone|etag|account|owner|'
+    r'path|url|uri|endpoint|host|hostname|date|time|timestamp|hash|digest|'
+    r'checksum|fingerprint|md5|sha1|sha256)$')
+
+
 def _detect(key, value):
     """Reasons this (key, value) pair looks like a hardcoded secret; [] if not."""
     reasons = [name for name, pat in SECRET_VALUE_PATTERNS.items() if pat.search(value)]
 
-    norm_key = re.sub(r'[^A-Z]', '', key.upper())
-    if any(hint in norm_key for hint in SECRET_KEY_HINTS) and not _looks_placeholder(value):
+    norm_key = re.sub(r'[^a-z0-9]', '', key.lower())
+    if any(hint in norm_key.upper() for hint in SECRET_KEY_HINTS) and not _looks_placeholder(value):
         reasons.append('secret-named key %r' % key)
 
-    if not reasons and _is_high_entropy_secret(value):
+    if (SCAN_ENTROPY and not reasons and not _BENIGN_KEY.search(norm_key)
+            and _is_high_entropy_secret(value)):
         reasons.append('high-entropy string (%.1f bits/char)' % _shannon_entropy(value))
 
     return reasons
 
 
-def _walk_strings(node, path=''):
-    """Yield (path, key, value) for every string leaf, key = its dict key."""
+def _resource_id(node):
+    """Best identifier for a record dict: its ARN, else a *Name, else an *Id."""
+    if not isinstance(node, dict):
+        return None
+    for suffix in ('Arn', 'Name', 'Id'):
+        # Exact match first ('Arn'), then any key ending in it ('FunctionArn').
+        for k, v in node.items():
+            if isinstance(v, str) and v and (k == suffix or k.endswith(suffix)):
+                return v
+    return None
+
+
+def _walk_strings(node, path='', resource=None):
+    """Yield (path, key, value, resource) for every string leaf. `resource` is
+    the ARN/name of the nearest enclosing record, so a finding points at the
+    real resource, not just the API call and an array index."""
     if isinstance(node, dict):
+        here = _resource_id(node) or resource
         for k, v in node.items():
             child = '%s.%s' % (path, k) if path else str(k)
             if isinstance(v, str):
-                yield child, str(k), v
+                yield child, str(k), v, here
             else:
-                yield from _walk_strings(v, child)
+                yield from _walk_strings(v, child, here)
     elif isinstance(node, (list, tuple)):
         for i, v in enumerate(node):
             child = '%s[%d]' % (path, i)
             if isinstance(v, str):
-                yield child, '', v
+                yield child, '', v, resource
             else:
-                yield from _walk_strings(v, child)
+                yield from _walk_strings(v, child, resource)
+
+
+# Response sections keyed by 'service.operation'; the rest of output is scanned
+# generically (iam, identity, ...).
+_CALL_SECTIONS = ('bruteforce', 'probe')
 
 
 def scan_secrets(output):
     """Flag hardcoded secrets in already-collected API responses.
 
     No extra AWS calls: list/describe responses (Lambda Environment.Variables,
-    EC2 user-data, ECS task-defs, ...) already sit in `output`; this just reads
-    them back and reports env-var-style secrets and embedded keys/tokens.
+    EC2 user-data, ECS task-defs, ...) already sit in `output`; this reads them
+    back and reports env-var-style secrets and embedded keys/tokens, tagged with
+    the resource they belong to. The full value is included (the plaintext is
+    already in the results JSON under the raw response — masking it there is
+    pointless), so the findings list is directly actionable.
     """
     logger = logging.getLogger()
     findings = []
     seen = set()
-    # Skip our own findings list to avoid rescanning it.
-    scannable = {k: v for k, v in output.items() if k != 'findings'}
 
-    for path, key, value in _walk_strings(scannable):
-        reasons = _detect(key, value)
+    def collect(node, base_path, service=None, operation=None, region=None):
+        for path, key, value, resource in _walk_strings(node, base_path):
+            reasons = _detect(key, value)
+            if not reasons:
+                decoded = _maybe_b64_decode(value)
+                if decoded is not None:
+                    reasons = ['base64: ' + r for r in _detect(key, decoded)]
+            if not reasons:
+                continue
 
-        if not reasons:
-            decoded = _maybe_b64_decode(value)
-            if decoded is not None:
-                reasons = ['base64: ' + r for r in _detect(key, decoded)]
+            dedup = (region, resource, key, value)
+            if dedup in seen:
+                continue
+            seen.add(dedup)
 
-        if not reasons:
+            findings.append({
+                'service': service,
+                'operation': operation,
+                'region': region,
+                'resource': resource,
+                'key': key,
+                'value': value,
+                'reasons': reasons,
+                'location': path,
+            })
+            logger.info('-- Possible secret: %s %s [%s] (%s)',
+                        '%s.%s' % (service, operation) if service else path,
+                        resource or '', key, ', '.join(reasons))
+
+    for section in _CALL_SECTIONS:
+        for call_key, response in output.get(section, {}).items():
+            base, _, region = call_key.partition('@')
+            service, _, operation = base.partition('.')
+            collect(response, '%s.%s' % (section, call_key), service, operation, region or None)
+
+    for key, value in output.items():
+        if key in _CALL_SECTIONS or key in ('findings', 'confirmed_actions'):
             continue
+        collect(value, key)
 
-        dedup = (path, value)
-        if dedup in seen:
-            continue
-        seen.add(dedup)
-
-        findings.append({
-            'location': path,
-            'key': key,
-            'value_preview': _redact(value),
-            'reasons': reasons,
-        })
-        logger.info('-- Possible secret at %s (%s)', path, ', '.join(reasons))
-
-    findings.sort(key=lambda f: f['location'])
+    findings.sort(key=lambda f: (f.get('region') or '', f.get('service') or '',
+                                 f.get('resource') or '', f['location']))
     return findings
 
 
@@ -626,11 +702,16 @@ class ColorFormatter(logging.Formatter):
     # Honour NO_COLOR (https://no-color.org) and skip colours when not a TTY.
     enabled = sys.stderr.isatty() and 'NO_COLOR' not in os.environ
 
-    # Found permissions and the run summary.
+    # Found permissions and the run summary (coloured green when shown).
     HITS = ('worked!', 'permission confirmed', 'Run for the hills',
             'root credentials', 'Enumeration complete', 'Possible secret')
     # Caller identity — shown even in the default (filtered) view.
-    ACCOUNT = ('Account ARN', 'Account Id', 'Account Path', 'User Id')
+    ACCOUNT = ('Account ARN', 'Account Id', 'User Id')
+    # The only INFO lines the default (quiet) view keeps: identity, found secrets,
+    # the final summary, and root/critical hits. Per-op "worked!" confirmations and
+    # progress chatter are dropped here (still in the JSON and under --verbose).
+    QUIET = ACCOUNT + ('Possible secret', 'Enumeration complete',
+                       'Run for the hills', 'root credentials')
 
     def format(self, record):
         line = super().format(record)
@@ -653,10 +734,10 @@ class ColorFormatter(logging.Formatter):
 
 
 def _findings_only(record):
-    # Keep results and warnings/errors; drop the routine progress chatter.
+    # Keep only high-value lines + warnings/errors; drop per-op confirmations
+    # and progress chatter (all still captured in the JSON / shown with --verbose).
     return (record.levelno >= logging.WARNING
-            or any(hit in record.getMessage()
-                   for hit in ColorFormatter.HITS + ColorFormatter.ACCOUNT))
+            or any(hit in record.getMessage() for hit in ColorFormatter.QUIET))
 
 
 def configure_logging(verbose=False):
@@ -682,14 +763,30 @@ def configure_logging(verbose=False):
     urllib3.disable_warnings(botocore.vendored.requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
 
+def _tag_region(results, region, multi):
+    """Suffix each 'service.operation' key with '@region' when sweeping several
+    regions, so per-region responses don't collide. Single region keeps the
+    original key (back-compatible output shape)."""
+    if not multi:
+        return results
+    return {'%s@%s' % (k, region): v for k, v in results.items()}
+
+
 def enumerate_iam(access_key, secret_key, session_token, region, endpoint_url=None,
                   dry_run=False, verbose=False, services=None, probe=False,
-                  all_services=False, timeout=None, threads=MAX_THREADS):
+                  full=True, timeout=None, threads=MAX_THREADS, regions=None,
+                  delay=DEFAULT_DELAY, jitter=DEFAULT_JITTER, entropy=False):
     """IAM Account Enumerator.
 
     This code provides a mechanism to attempt to validate the permissions assigned
-    to a given set of AWS tokens.
+    to a given set of AWS tokens. Pass `regions` (a list) to sweep the regional
+    read operations across several regions; `region` is the single-region default
+    and the endpoint for the global IAM/STS calls. `delay`/`jitter` throttle each
+    API call by `delay + random[0, jitter)` seconds.
     """
+    global REQUEST_DELAY, REQUEST_JITTER, SCAN_ENTROPY
+    REQUEST_DELAY, REQUEST_JITTER, SCAN_ENTROPY = delay, jitter, entropy
+
     output = dict()
     # dry-run always logs in full; otherwise verbose controls the chatter.
     configure_logging(verbose=verbose or dry_run)
@@ -719,31 +816,45 @@ def enumerate_iam(access_key, secret_key, session_token, region, endpoint_url=No
             )
             return output
 
+    region_list = regions or [region]
+    multi = len(region_list) > 1
+    if multi:
+        logger.info('Sweeping %d regions: %s', len(region_list), ', '.join(region_list))
+
     identity = get_identity(access_key, secret_key, session_token, region, endpoint_url)
     if identity is not None:
         output['identity'] = identity
 
+    # IAM and STS are global; enumerate once against the primary region endpoint.
     output['iam'] = enumerate_using_iam(access_key, secret_key, session_token, region, endpoint_url)
-    output['bruteforce'] = enumerate_using_bruteforce(
-        access_key, secret_key, session_token, region, endpoint_url, services, timeout, threads)
 
-    if all_services:
-        output['all_services'] = enumerate_all_services(
-            access_key, secret_key, session_token, region, endpoint_url, services, timeout, threads)
+    # Default read pass sweeps every service; --curated (full=False) uses the
+    # smaller hand-picked set. Both land in output['bruteforce'].
+    read_pass = enumerate_all_services if full else enumerate_using_bruteforce
+    output['bruteforce'] = {}
+    output['probe'] = {} if probe else None
+    for reg in region_list:
+        if multi:
+            logger.info('--- Region %s ---', reg)
+        output['bruteforce'].update(_tag_region(read_pass(
+            access_key, secret_key, session_token, reg, endpoint_url, services, timeout, threads),
+            reg, multi))
+        if probe:
+            output['probe'].update(_tag_region(enumerate_using_probe(
+                access_key, secret_key, session_token, reg, endpoint_url, services, timeout, threads),
+                reg, multi))
 
-    if probe:
-        output['probe'] = enumerate_using_probe(
-            access_key, secret_key, session_token, region, endpoint_url, services, timeout, threads)
+    if output['probe'] is None:
+        del output['probe']
 
     output['confirmed_actions'] = confirmed_actions(output)
     output['findings'] = scan_secrets(output)
 
     iam_hits = sum(1 for key in output['iam'] if key.startswith('iam.'))
-    logger.info('Enumeration complete: %d actions confirmed (%d IAM, %d brute force, '
-                '%d all-services, %d probe). %d possible secret(s) flagged.',
-                len(output['confirmed_actions']), iam_hits,
-                len(output['bruteforce']), len(output.get('all_services', {})),
-                len(output.get('probe', {})), len(output['findings']))
+    logger.info('Enumeration complete: %d actions confirmed (%d IAM, %d read, %d probe) '
+                'across %d region(s). %d possible secret(s) flagged.',
+                len(output['confirmed_actions']), iam_hits, len(output['bruteforce']),
+                len(output.get('probe', {})), len(region_list), len(output['findings']))
 
     return output
 
@@ -811,7 +922,7 @@ def enumerate_role(iam_client, output):
 
     try:
         role_policies = iam_client.list_attached_role_policies(RoleName=role_name)
-    except botocore.exceptions.ClientError as err:
+    except botocore.exceptions.ClientError:
         pass
     else:
         output['iam.list_attached_role_policies'] = remove_metadata(role_policies)
@@ -827,7 +938,7 @@ def enumerate_role(iam_client, output):
 
     try:
         role_policies = iam_client.list_role_policies(RoleName=role_name)
-    except botocore.exceptions.ClientError as err:
+    except botocore.exceptions.ClientError:
         pass
     else:
         output['iam.list_role_policies'] = remove_metadata(role_policies)
@@ -876,7 +987,7 @@ def enumerate_user(iam_client, output):
 
     try:
         user_policies = iam_client.list_attached_user_policies(UserName=user_name)
-    except botocore.exceptions.ClientError as err:
+    except botocore.exceptions.ClientError:
         pass
     else:
         output['iam.list_attached_user_policies'] = remove_metadata(user_policies)
@@ -892,7 +1003,7 @@ def enumerate_user(iam_client, output):
 
     try:
         user_policies = iam_client.list_user_policies(UserName=user_name)
-    except botocore.exceptions.ClientError as err:
+    except botocore.exceptions.ClientError:
         pass
     else:
         output['iam.list_user_policies'] = remove_metadata(user_policies)
@@ -911,7 +1022,7 @@ def enumerate_user(iam_client, output):
 
     try:
         user_groups = iam_client.list_groups_for_user(UserName=user_name)
-    except botocore.exceptions.ClientError as err:
+    except botocore.exceptions.ClientError:
         pass
     else:
         output['iam.list_groups_for_user'] = remove_metadata(user_groups)
@@ -938,7 +1049,7 @@ def enumerate_user(iam_client, output):
 
             for policy in group_policy['PolicyNames']:
                 logger.info('---- Policy "%s"', policy)
-        except botocore.exceptions.ClientError as err:
+        except botocore.exceptions.ClientError:
             pass
 
     return output

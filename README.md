@@ -7,23 +7,20 @@ $ ./enumerate-iam.py --access-key AKIA... --secret-key StF0q...
 [INFO] -- Account ARN : arn:aws:iam::123456789012:user/bob
 [INFO] -- Account Id  : 123456789012
 [INFO] Run for the hills, get_account_authorization_details worked!
-[INFO] -- gamelift.list_builds() worked!
-[INFO] -- cloudformation.list_stack_sets() worked!
-[INFO] -- sqs.list_queues() worked!
-[INFO] -- lambda.list_functions() worked!
-[INFO] -- Possible secret at bruteforce.lambda.list_functions.Functions[0].Environment.Variables.DB_PASSWORD (secret-named key 'DB_PASSWORD')
-[INFO] Enumeration complete: 5 actions confirmed (1 IAM, 4 brute force, 0 all-services, 0 probe). 1 possible secret(s) flagged.
+[INFO] -- Possible secret: lambda.list_functions [arn:aws:lambda:us-east-1:123456789012:function:billing-prod] (DB_PASSWORD) (secret-named key 'DB_PASSWORD')
+[INFO] Enumeration complete: 143 actions confirmed (1 IAM, 142 read, 0 probe) across 34 region(s). 1 possible secret(s) flagged.
 ```
 
-The terminal shows only the results — the caller's identity (cyan), the found
-permissions (green), and a summary — with the routine progress chatter hidden
-(pass `--verbose` for the full log). The complete JSON is written to an
-auto-named file (`enumerate-iam-<account-id>.json`) rather than dumped to the
-screen; use `--output -` to send it to stdout for piping to `jq`. Now you do!
+The terminal stays quiet on purpose: it shows only the caller's identity, any
+secrets found, root/critical hits, and the final summary. The per-operation
+`worked!` confirmations and progress chatter are hidden (`--verbose` for the full
+log). The complete JSON — every confirmed call and its full response — is written
+to an auto-named file (`enumerate-iam-<account-id>.json`); use `--output -` to
+send it to stdout for piping to `jq`.
 
-`enumerate-iam.py` tries to brute force all API calls allowed by the IAM policy.
-The calls performed by this tool are all non-destructive (only get* and list*
-calls are performed).
+Only non-destructive reads are performed (`get*`/`list*`/`describe*`). By default
+the tool sweeps **every service** in **every region**, throttled low-and-slow, and
+scans every captured response for hardcoded secrets.
 
 ## Usage
 
@@ -32,21 +29,24 @@ calls are performed).
 --secret-key      AWS secret key (optional, see credentials below)
 --session-token   STS session token
 --profile         Named profile from the shared AWS credentials file
---region          AWS region to send API requests to (default: us-east-1)
+--region REGION   Limit to a single region (default: sweep every region).
+                  Also the endpoint for the global IAM/STS calls.
+--regions LIST    Sweep this comma-separated region list instead of all
 --endpoint-url    Override the AWS endpoint URL (e.g. a localstack or proxy URL)
 --output FILE     Where to write full JSON results: a path, or - for stdout
                   (default: auto-named enumerate-iam-<account-id>.json)
 --services LIST   Limit the scan to these services (comma-separated, e.g. s3,ec2)
+--curated         Only test the hand-picked set instead of sweeping every service
+                  (faster, fewer calls)
 --probe           Also confirm parameter-requiring read permissions via
-                  error-code analysis (much broader coverage, slower)
---all-services    Sweep every zero-arg list/describe/get op across all services
-                  (not just the curated set) and scan every response for secrets
-                  (widest coverage, many calls, slow)
---threads N       Concurrent API calls (default 25; raise for --all-services,
-                  lower to avoid throttling)
---timeout MINUTES Wall-clock cap on the brute-force/probe phases
+                  error-code analysis (broader permission coverage, slower)
+--entropy         Also flag high-entropy strings as possible secrets (noisier)
+--threads N       Concurrent API calls (default 25; lower to avoid throttling)
+--delay SECONDS   Base sleep before each API call (default 2.0; 0 disables)
+--jitter SECONDS  Extra random 0..N seconds added to --delay per call (default 5.0)
+--timeout MINUTES Wall-clock cap on the read/probe phases
 --dry-run         List the operations that would be tested and exit
---verbose         Show all progress chatter (default shows only the results)
+--verbose         Show all progress chatter (default shows only the useful lines)
 ```
 
 The caller's identity comes from `sts:GetCallerIdentity` (needs no permissions),
@@ -54,47 +54,74 @@ and every confirmed call is mapped to its IAM action — the result JSON include
 `confirmed_actions` list (e.g. `s3:ListBuckets`) you can drop straight into a
 policy.
 
-### Coverage and `--probe`
+### Coverage
 
-The default pass only tests read operations callable with **no arguments**
-(roughly a third of all `get*`/`list*`/`describe*` calls). `--probe` additionally
-fires the parameter-requiring ones with dummy input and reads the error: an
-authorization denial means "no permission", while a validation or not-found error
-means the call passed authorization, so the permission *is* present. Best-effort
-(a few results can be false positives), but it widens coverage from ~2400 to most
-of AWS's ~7700 read operations.
+By default the tool sweeps **every zero-argument** `list*`/`describe*`/`get*`
+operation across all ~300 services (~2400 calls), keeps every response, and
+paginates each one (all pages, capped at 5000 items) so nothing is missed to a
+first-page cutoff. `--curated` restricts this to a smaller hand-picked set
+(`enumerate_iam/bruteforce_tests.py`) for a quick look.
 
-`--all-services` takes the other axis: instead of confirming *permissions*, it
-sweeps every zero-arg read op across all ~300 services (the full ~2400, not just
-the hand-curated subset the default pass uses) and keeps the **response bodies**
-so the secret scanner sees the widest possible surface. It's many calls and slow
-— pair it with `--threads`, `--timeout`, and/or `--services`.
+`--probe` adds the parameter-requiring reads: it fires them with dummy input and
+reads the error — an authorization denial means "no permission", while a
+validation or not-found error means the call passed authorization, so the
+permission *is* present. Best-effort (a few false positives), widening permission
+coverage toward most of AWS's ~7700 read operations. Probe confirms authz only; it
+does not capture a response body to scan.
+
+### Multi-region
+
+Lambda, EC2, and most services are regional, and regional secrets differ per
+region, so by default the read pass runs in **every region** AWS advertises
+(IAM/STS are global and run once). Narrow with `--region us-east-1` (single) or
+`--regions us-east-1,eu-west-1` (a list). A custom `--endpoint-url` defaults to a
+single region. In the JSON, multi-region response keys are tagged
+`service.operation@region`, and each finding carries its `region`.
+
+### Throttling
+
+Each API call sleeps `--delay + random(0, --jitter)` seconds first — **2 to 7
+seconds by default** — to stay low-and-slow under rate limits and detection.
+Combined with all-services × all-regions this makes a default run deliberately
+long; `--delay 0` disables throttling, and `--threads` / `--timeout` /
+`--services` / `--region` bound the scope.
 
 ### Secret scanning
 
 Every captured response is scanned for hardcoded secrets, and the hits land in a
-`findings` list in the result JSON (and print in green). No extra API calls — the
-data is already there. A `lambda.list_functions` response, for example, includes
-each function's `Environment.Variables`, so a password hardcoded as an env var is
-surfaced automatically. Detection covers:
+`findings` list in the result JSON (and print to the terminal). No extra API
+calls — the data is already there. A `lambda.list_functions` response, for
+example, includes each function's `Environment.Variables`, so a password
+hardcoded as an env var is surfaced automatically. Detection covers:
 
  * **Secret-named keys** — env-var-style keys like `DB_PASSWORD`, `*_TOKEN`,
    `*SECRET*`, `CLIENT_SECRET` with a non-placeholder value.
  * **Known value patterns** — AWS access keys (`AKIA…`/`ASIA…`), PEM private
    keys, GitHub/Slack/Google tokens, JWTs, and DB connection strings that embed a
    password (`postgres://user:pass@…`).
- * **High-entropy strings** — random-looking tokens (base64 alphabet, ≥4.0
-   bits/char) even under an unremarkable key name. Pure hex is skipped to avoid
-   flagging hashes/resource ids.
  * **Base64-wrapped secrets** — values that decode to printable text are decoded
    and re-scanned, catching secrets stashed as base64.
+ * **High-entropy strings** (`--entropy`, off by default) — random-looking tokens
+   even under an unremarkable key name. Off by default because it's noisy; the
+   other three are high-precision.
 
-Reported values are redacted (`Sup***************d!!`); the raw secret is never
-written to the results.
+Each finding names the `service`, `operation`, `region`, the `resource` it
+belongs to (its ARN/name, not an array index), the offending `key`, and the full
+`value` — the plaintext is already in the raw response in the same file, so it is
+reported in full to be directly actionable.
 
-The widest surface comes from combining this with `--all-services`, which pulls
-*every* zero-arg read response (Lambda env vars, ECS task-defs, CloudFormation
-parameters, SSM, …) through the scanner.
+```json
+{
+  "service": "lambda",
+  "operation": "list_functions",
+  "region": "us-east-1",
+  "resource": "arn:aws:lambda:us-east-1:123456789012:function:billing-prod",
+  "key": "DB_PASSWORD",
+  "value": "Sup3rSecretP@ssw0rd!!",
+  "reasons": ["secret-named key 'DB_PASSWORD'"],
+  "location": "bruteforce.lambda.list_functions.Functions[0].Environment.Variables.DB_PASSWORD"
+}
+```
 
 ### Credentials
 
@@ -140,8 +167,12 @@ results = enumerate_iam(access_key,
                         verbose=False,
                         services=None,
                         probe=False,
-                        all_services=False,
-                        threads=25)
+                        full=True,          # sweep all services (False = curated set)
+                        regions=None,       # list of regions (None = the single `region`)
+                        threads=25,
+                        delay=2.0,
+                        jitter=5.0,
+                        entropy=False)
 ```
 
 The returned value is a python dictionary containing all the enumerated
@@ -159,14 +190,14 @@ Decided to write my own because the others:
 
 ## Updating the API calls
 
-The API calls to be performed during permission enumeration are stored in
-`enumerate_iam/bruteforce_tests.py`, a Python dict() which is generated by
-`enumerate_iam/generate_bruteforce_tests.py` directly from the installed
-botocore models. Every entry is guaranteed to match a real boto3 client method
-that accepts zero arguments.
+The curated `--curated` set is stored in `enumerate_iam/bruteforce_tests.py`, a
+Python dict() generated by `enumerate_iam/generate_bruteforce_tests.py` directly
+from the installed botocore models. Every entry is guaranteed to match a real
+boto3 client method that accepts zero arguments. (The default all-services sweep
+enumerates the botocore models directly and needs no regeneration.)
 
-AWS releases new services every quarter, to make sure that this tool is finding
-all the existing permissions upgrade boto3/botocore and regenerate:
+AWS releases new services every quarter; to refresh the curated set upgrade
+boto3/botocore and regenerate:
 
 ```console
 pip install --upgrade boto3 botocore
